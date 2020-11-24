@@ -2265,8 +2265,17 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
 		page = get_page_from_free_area(area, migratetype);
 		if (!page)
 			continue;
+		/* 删除分配了的页面 */
 		del_page_from_free_list(page, zone, current_order);
+
+		/*
+		 *
+		 * 这里是把如果是从更大的order上分了一块内存，那么要把剩下没有使用的
+		 * 放回到相应order的list上。
+		 *
+		 * */
 		expand(zone, page, order, current_order, migratetype);
+
 		set_pcppage_migratetype(page, migratetype);
 		return page;
 	}
@@ -3370,7 +3379,10 @@ struct page *rmqueue(struct zone *preferred_zone,
 {
 	unsigned long flags;
 	struct page *page;
-
+	/*
+	 * 如果只分配一页的话，会直接从cpuset管理的页面list中直接分配热页。
+	 *
+	 * */
 	if (likely(order == 0)) {
 		page = rmqueue_pcplist(preferred_zone, zone, gfp_flags,
 					migratetype, alloc_flags);
@@ -3384,6 +3396,10 @@ struct page *rmqueue(struct zone *preferred_zone,
 	WARN_ON_ONCE((gfp_flags & __GFP_NOFAIL) && (order > 1));
 	spin_lock_irqsave(&zone->lock, flags);
 
+	/*
+	 * 这里是分配多页
+	 *
+	 * */
 	do {
 		page = NULL;
 		if (alloc_flags & ALLOC_HARDER) {
@@ -3750,7 +3766,11 @@ retry:
 				goto retry;
 			}
 		}
-
+		/*
+		 * 先通过一种简单快速的方式来判断水位是否OK，如果没有问题就直接
+		 * 去分配内存。也就是跳到 try_this_zone
+		 *
+		 * */
 		mark = wmark_pages(zone, alloc_flags & ALLOC_WMARK_MASK);
 		if (!zone_watermark_fast(zone, order, mark,
 				       ac->highest_zoneidx, alloc_flags)) {
@@ -3792,7 +3812,10 @@ retry:
 				continue;
 			}
 		}
-
+		/*
+		 * 这里才是真正分配页面的地方。
+		 *
+		 * */
 try_this_zone:
 		page = rmqueue(ac->preferred_zoneref->zone, zone, order,
 				gfp_mask, alloc_flags, ac->migratetype);
@@ -4552,13 +4575,17 @@ retry_cpuset:
 					ac->highest_zoneidx, ac->nodemask);
 	if (!ac->preferred_zoneref->zone)
 		goto nopage;
-
+	/*
+	 * 如果设置了ALLOC_KSWAPD，那么启动kwapd线程回收内存
+	 * */
 	if (alloc_flags & ALLOC_KSWAPD)
 		wake_all_kswapds(order, gfp_mask, ac);
 
 	/*
 	 * The adjusted alloc_flags might result in immediate success, so try
 	 * that first
+	 * 这是在回收过程，还是会尝试使用 get_page_from_freelist 来快速分配内存
+	 *
 	 */
 	page = get_page_from_freelist(gfp_mask, order, alloc_flags, ac);
 	if (page)
@@ -4577,6 +4604,11 @@ retry_cpuset:
 			(costly_order ||
 			   (order > 0 && ac->migratetype != MIGRATE_MOVABLE))
 			&& !gfp_pfmemalloc_allowed(gfp_mask)) {
+		/*
+		 * 到这里，如果还是没有分配分配到内存页面就启动页面合并来分配。
+		 * 主要就是将一些小的页面合并成大的页面块来分配。
+		 *
+		 * */
 		page = __alloc_pages_direct_compact(gfp_mask, order,
 						alloc_flags, ac,
 						INIT_COMPACT_PRIORITY,
@@ -4770,6 +4802,11 @@ static inline bool prepare_alloc_pages(gfp_t gfp_mask, unsigned int order,
 		struct alloc_context *ac, gfp_t *alloc_mask,
 		unsigned int *alloc_flags)
 {
+	/*
+	 *
+	 *  根据gfp_mask来初始化ac。
+	 *
+	 */
 	ac->highest_zoneidx = gfp_zone(gfp_mask);
 	ac->zonelist = node_zonelist(preferred_nid, gfp_mask);
 	ac->nodemask = nodemask;
@@ -4787,7 +4824,11 @@ static inline bool prepare_alloc_pages(gfp_t gfp_mask, unsigned int order,
 	fs_reclaim_release(gfp_mask);
 
 	might_sleep_if(gfp_mask & __GFP_DIRECT_RECLAIM);
-
+	/*
+	 * 在一些情况需要直接返回分配内存页失败
+	 * 具体看函数实现
+	 *
+	 */
 	if (should_fail_alloc_page(gfp_mask, order))
 		return false;
 
@@ -4833,11 +4874,25 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order, int preferred_nid,
 		return NULL;
 	}
 
+	/*
+	 * gfp_allowed_mask 在系统启动中为GFP_BOOT_MASK
+	 * #define GFP_BOOT_MASK (__GFP_BITS_MASK & ~(__GFP_RECLAIM|__GFP_IO|__GFP_FS))
+	 *
+	 * 后设置为如下
+	 * gfp_allowed_mask = __GFP_BITS_MASK; = 0x7FFFFF;
+	 *
+	 */
 	gfp_mask &= gfp_allowed_mask;
 	alloc_mask = gfp_mask;
+	/*
+	 * prepare_alloc_pages 主要是初始化ac，具体见函数实现
+	 */
 	if (!prepare_alloc_pages(gfp_mask, order, preferred_nid, nodemask, &ac, &alloc_mask, &alloc_flags))
 		return NULL;
-
+	/*
+	 * 这里主要是要找一个最好的zone用于后面分配内存
+	 *
+	 * */
 	finalise_ac(gfp_mask, &ac);
 
 	/*
@@ -4845,7 +4900,9 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order, int preferred_nid,
 	 * memory until all local zones are considered.
 	 */
 	alloc_flags |= alloc_flags_nofragment(ac.preferred_zoneref->zone, gfp_mask);
-
+	/*
+	 * 大部分情况会走这里
+	 */
 	/* First allocation attempt */
 	page = get_page_from_freelist(alloc_mask, order, alloc_flags, &ac);
 	if (likely(page))
@@ -4865,6 +4922,9 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order, int preferred_nid,
 	 * &cpuset_current_mems_allowed to optimize the fast-path attempt.
 	 */
 	ac.nodemask = nodemask;
+	/*
+	 * 系统内存不足，先回收再分配
+	 */
 
 	page = __alloc_pages_slowpath(alloc_mask, order, &ac);
 
