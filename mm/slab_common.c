@@ -288,6 +288,13 @@ static unsigned int calculate_alignment(slab_flags_t flags,
 	 * The hardware cache alignment cannot override the specified
 	 * alignment though. If that is greater then use it.
 	 */
+
+	/*
+	 *
+	 * 先对齐到cache
+	 * 再对齐到字
+	 *
+	 * */
 	if (flags & SLAB_HWCACHE_ALIGN) {
 		unsigned int ralign;
 

@@ -80,26 +80,76 @@ struct kmem_cache_order_objects {
  * Slab cache management.
  */
 struct kmem_cache {
+    /*
+     * percpu 变量 ，对于每个cpu来讲就是一个本地缓存池，当分配内存时优先
+     * 从本地分配从而保证cache命中率。
+     * */
 	struct kmem_cache_cpu __percpu *cpu_slab;
 	/* Used for retrieving partial slabs, etc. */
+    /*
+     * object分配掩码,经常使用的SLAB_HWCACHE_ALIGN标志位，代表创建的kmem_cache
+     * 管理的object按照硬件cache 对齐
+     *
+     * */
 	slab_flags_t flags;
+    /*
+     * kmem_cache_node中partial链表最大slab数量，如果大于这个mini_partial的值，
+     * 那么多余的slab就会被释放.
+     *
+     * */
 	unsigned long min_partial;
+    /*
+     * 分配的object的大小, 包括对齐时补的大小，所以这个size应试>=object_size
+     *
+     * */
 	unsigned int size;	/* The size of an object including metadata */
+    /*
+     * object 直正的大小
+     * */
 	unsigned int object_size;/* The size of an object without metadata */
+
+    /*
+     * 一个slab中会有N个object,这些object形成一链表，第个object中都存储了
+     * 下一个object相对当前object首地址的offset值。
+     *
+     * */
 	unsigned int offset;	/* Free pointer offset */
 #ifdef CONFIG_SLUB_CPU_PARTIAL
 	/* Number of per cpu partial objects to keep around */
+
+    /*
+     * 每个cpu中的所有slab中所有free object的数量最大值。超过这个值就会将所有的
+     * slab转移到kmem_cache_node的partial链表
+     *
+     * */
 	unsigned int cpu_partial;
 #endif
+    /*
+     * 一个slab需要的页数和一个slab中object数
+     * 0----------------15 16----------------31
+     *       低16位               高16位
+     * 一个slab中object数  一个slab需要的页数
+     * */
 	struct kmem_cache_order_objects oo;
 
 	/* Allocation and freeing of slabs */
 	struct kmem_cache_order_objects max;
 	struct kmem_cache_order_objects min;
+    /*
+     * 从伙伴系统分配内存的掩码
+     * */
 	gfp_t allocflags;	/* gfp flags to use on each alloc */
 	int refcount;		/* Refcount for slab cache destroy */
 	void (*ctor)(void *);
+    /*
+     * 对齐到字的大小
+     * */
 	unsigned int inuse;		/* Offset to metadata */
+    /*
+     * 如果flags配置了SLAB_HWCACHE_ALIGN,则先对齐到cache的大小
+     * 再对齐到字(sizeof(void *))的大小
+     *
+     * */
 	unsigned int align;		/* Alignment */
 	unsigned int red_left_pad;	/* Left redzone padding size */
 	const char *name;	/* Name (only for display!) */

@@ -3515,6 +3515,12 @@ ALLOW_ERROR_INJECTION(should_fail_alloc_page, TRUE);
  * one free page of a suitable size. Checking now avoids taking the zone lock
  * to check in the allocation paths if no pages are free.
  */
+
+/*
+ * 这个函数的基本思想就是检测一些特殊的分配标志比如 ALLOC_HARDER 等，来找到
+ * 最少应该保留的内存页数。然后看free_pages 减去保留的内存，然后看是否能够满足
+ * 将要分配的内存。
+ * */
 bool __zone_watermark_ok(struct zone *z, unsigned int order, unsigned long mark,
 			 int highest_zoneidx, unsigned int alloc_flags,
 			 long free_pages)
@@ -3620,6 +3626,10 @@ static inline bool zone_watermark_fast(struct zone *z, unsigned int order,
 	 * the caller is !atomic then it'll uselessly search the free
 	 * list. That corner case is then slower but it is harmless.
 	 */
+
+	/*
+	 * 这各快速check其实也只是对order=0的情况起作用
+	 * */
 	if (!order && (free_pages - cma_pages) >
 				mark + z->lowmem_reserve[highest_zoneidx])
 		return true;
@@ -3767,11 +3777,17 @@ retry:
 			}
 		}
 		/*
+		 * 这个mark如果特殊情况一般会=zone->watermark[WMARK_LOW]
+		 * 因为在__alloc_pages_nodemask的一开始就设置
+		 * unsigned int alloc_flags = ALLOC_WMARK_LOW;
+		 *
+		 * */
+		mark = wmark_pages(zone, alloc_flags & ALLOC_WMARK_MASK);
+		/*
 		 * 先通过一种简单快速的方式来判断水位是否OK，如果没有问题就直接
 		 * 去分配内存。也就是跳到 try_this_zone
 		 *
 		 * */
-		mark = wmark_pages(zone, alloc_flags & ALLOC_WMARK_MASK);
 		if (!zone_watermark_fast(zone, order, mark,
 				       ac->highest_zoneidx, alloc_flags)) {
 			int ret;

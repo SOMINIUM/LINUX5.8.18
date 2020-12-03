@@ -3673,6 +3673,10 @@ static int calculate_sizes(struct kmem_cache *s, int forced_order)
 	 * offset 0. In order to align the objects we have to simply size
 	 * each object to conform to the alignment.
 	 */
+	/*
+	 * 对齐到cache
+	 *
+	 * */
 	size = ALIGN(size, s->align);
 	s->size = size;
 	if (forced_order >= 0)
@@ -3740,6 +3744,10 @@ static int kmem_cache_open(struct kmem_cache *s, slab_flags_t flags)
 	 * The larger the object size is, the more pages we want on the partial
 	 * list to avoid pounding the page allocator excessively.
 	 */
+	/*
+	 * size越大，那么min_partial应该越大，这样可以减少对伙伴系统的分配压力。
+	 *
+	 * */
 	set_min_partial(s, ilog2(s->size) / 2);
 
 	set_cpu_partial(s);

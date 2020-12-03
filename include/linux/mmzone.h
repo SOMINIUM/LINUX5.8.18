@@ -1022,6 +1022,12 @@ static __always_inline struct zoneref *next_zones_zonelist(struct zoneref *z,
 					enum zone_type highest_zoneidx,
 					nodemask_t *nodes)
 {
+    /*
+     * 一般认为低地址段的内存是比较珍贵的，比如DMA内存比NORMAL的内存珍贵，
+     * 所以分配内存的时候内核有一个扫描序列：
+     * MOVABLE=>HIGHMEM=>NORMAL=>DMA32=>DMA
+     *
+     * */
 	if (likely(!nodes && zonelist_zone_idx(z) <= highest_zoneidx))
 		return z;
 	return __next_zones_zonelist(z, highest_zoneidx, nodes);
