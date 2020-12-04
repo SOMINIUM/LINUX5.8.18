@@ -619,7 +619,13 @@ struct rt_rq {
 	int			rt_queued;
 
 	int			rt_throttled;
+    /*
+     * 为本周期内已经运行的时间
+     */
 	u64			rt_time;
+    /*
+     * 为本周期内可以运行的时间
+     */
 	u64			rt_runtime;
 	/* Nests inside the rq lock: */
 	raw_spinlock_t		rt_runtime_lock;

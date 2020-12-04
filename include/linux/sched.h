@@ -448,13 +448,25 @@ struct sched_statistics {
 
 struct sched_entity {
 	/* For load-balancing: */
+    /*
+     * 权重信息（weight 和 inv_weight)
+     * */
 	struct load_weight		load;
 	struct rb_node			run_node;
 	struct list_head		group_node;
 	unsigned int			on_rq;
 
+    /*
+     * 进程的启动时间
+     */
 	u64				exec_start;
+    /*
+     * 进程运行真实时间总和
+     */
 	u64				sum_exec_runtime;
+    /*
+     * 进程运行虚拟时间总和
+     */
 	u64				vruntime;
 	u64				prev_sum_exec_runtime;
 

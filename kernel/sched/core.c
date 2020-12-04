@@ -754,6 +754,11 @@ static void set_load_weight(struct task_struct *p, bool update_load)
 	/*
 	 * SCHED_IDLE tasks get minimal weight:
 	 */
+
+	/*
+	 * idle进程的weight设置, 我们这里不关心这个
+	 *
+	 * */
 	if (task_has_idle_policy(p)) {
 		load->weight = scale_load(WEIGHT_IDLEPRIO);
 		load->inv_weight = WMULT_IDLEPRIO;
@@ -763,6 +768,14 @@ static void set_load_weight(struct task_struct *p, bool update_load)
 	/*
 	 * SCHED_OTHER tasks have to update their load when changing their
 	 * weight
+	 */
+
+	/*
+	 * 进程设置 weight, 基本用户态的进程 weight 都是由这里设置的
+	 *
+	 * if 和 else两个分支设置的东西差不多
+	 * 主要就是设置 weight 和 inv_weight 两个值
+	 *
 	 */
 	if (update_load && p->sched_class == &fair_sched_class) {
 		reweight_task(p, prio);

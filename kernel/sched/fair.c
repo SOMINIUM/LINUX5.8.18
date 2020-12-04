@@ -203,9 +203,15 @@ static void __update_inv_weight(struct load_weight *lw)
 {
 	unsigned long w;
 
+
 	if (likely(lw->inv_weight))
 		return;
 
+	/*
+	 * 以下代码中有计算调度实体的权重占整个就绪队列的比例时有用
+	 * 如果是计算进程虚拟运行时间，基本上lw->inv_weight都不等于0
+	 * 在上面的循环就返回了。
+	 */
 	w = scale_load_down(lw->weight);
 
 	if (BITS_PER_LONG > 32 && unlikely(w >= WMULT_CONST))
@@ -228,6 +234,16 @@ static void __update_inv_weight(struct load_weight *lw)
  * Or, weight =< lw.weight (because lw.weight is the runqueue weight), thus
  * weight/lw.weight <= 1, and therefore our shift will also be positive.
  */
+
+
+/*
+ * 这个函数两个功能：
+ *
+ * 1. 计算进程的虚拟运行时间
+ *
+ * 2. 计算调度实体的权重占整个就绪队列的比例
+ *
+ * */
 static u64 __calc_delta(u64 delta_exec, unsigned long weight, struct load_weight *lw)
 {
 	u64 fact = scale_load_down(weight);
@@ -672,6 +688,12 @@ int sched_proc_update_handler(struct ctl_table *table, int write,
  */
 static inline u64 calc_delta_fair(u64 delta, struct sched_entity *se)
 {
+
+	/*
+	 * 按照 vruntime 的计算公式，如果NICE值等于0,那计算结果就是等于
+	 * delta_exec,直接返回就行。
+	 *
+	 */
 	if (unlikely(se->load.weight != NICE_0_LOAD))
 		delta = __calc_delta(delta, NICE_0_LOAD, &se->load);
 
@@ -688,6 +710,13 @@ static inline u64 calc_delta_fair(u64 delta, struct sched_entity *se)
  */
 static u64 __sched_period(unsigned long nr_running)
 {
+
+	/*
+	 * 这个计算过程比较简单，就是如果当行运行的进程数 > 8
+	 * 返回 进程数 × sysctl_sched_min_granularity(0.75us)
+	 * 否则返回 sysctl_sched_latency = 6ms;
+	 *
+	 */
 	if (unlikely(nr_running > sched_nr_latency))
 		return nr_running * sysctl_sched_min_granularity;
 	else
@@ -702,8 +731,17 @@ static u64 __sched_period(unsigned long nr_running)
  */
 static u64 sched_slice(struct cfs_rq *cfs_rq, struct sched_entity *se)
 {
+	/*
+	 * 计算时间片
+	 *
+	 */
 	u64 slice = __sched_period(cfs_rq->nr_running + !se->on_rq);
-
+	/*
+	 * 如果不是组调度，那么只循环一次
+	 * 这过程就是计算当前进程应该运行的时间片
+	 * slice = slice * (当前进程weight / 整个cfs_rq的负载)
+	 *
+	 */
 	for_each_sched_entity(se) {
 		struct load_weight *load;
 		struct load_weight lw;
@@ -844,24 +882,42 @@ static void update_tg_load_avg(struct cfs_rq *cfs_rq, int force)
 static void update_curr(struct cfs_rq *cfs_rq)
 {
 	struct sched_entity *curr = cfs_rq->curr;
+	/*
+	 * 获取当前时间值
+	 *
+	 * */
 	u64 now = rq_clock_task(rq_of(cfs_rq));
 	u64 delta_exec;
 
 	if (unlikely(!curr))
 		return;
-
+	/*
+	 * 计算当前进程运行了多长时间
+	 *
+	 * */
 	delta_exec = now - curr->exec_start;
 	if (unlikely((s64)delta_exec <= 0))
 		return;
 
 	curr->exec_start = now;
-
+	/*
+	 * 更新当前进程运行的最大时长，在单次运行中
+	 *
+	 */
 	schedstat_set(curr->statistics.exec_max,
 		      max(delta_exec, curr->statistics.exec_max));
 
+	/*
+	 * 更新当前进程运行的总运行时长
+	 *
+	 */
 	curr->sum_exec_runtime += delta_exec;
 	schedstat_add(cfs_rq->exec_clock, delta_exec);
 
+	/*
+	 * 计算并设置当前进程的虚拟运行时间
+	 *
+	 */
 	curr->vruntime += calc_delta_fair(delta_exec, curr);
 	update_min_vruntime(cfs_rq);
 
@@ -3111,9 +3167,26 @@ void reweight_task(struct task_struct *p, int prio)
 	struct sched_entity *se = &p->se;
 	struct cfs_rq *cfs_rq = cfs_rq_of(se);
 	struct load_weight *load = &se->load;
+	/*
+	 * 从 sched_prio_to_weight 这个数组中查找对应该的weight
+	 * scale_load 暂时可以不用关心，就是为了方便处理加入的移位
+	 *
+	 */
 	unsigned long weight = scale_load(sched_prio_to_weight[prio]);
 
+	/*
+	 * 这里就是把 weight 赋值给 lw->weight
+	 *
+	 */
 	reweight_entity(cfs_rq, se, weight);
+
+	/*
+	 * 这里就是设置 inv_weight ,这个是用来计算 vruntime
+	 * 主要是为了简化计算过程，比如不使用除法，把除法转化为乘法和移位操作
+	 *
+	 * 这里的 inv_weight = 2^32 / weight
+	 * 后面我们会通过公式推导得出为什么 inv_weight 是这样一个值
+	 */
 	load->inv_weight = sched_prio_to_wmult[prio];
 }
 
@@ -4345,10 +4418,17 @@ check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
 	unsigned long ideal_runtime, delta_exec;
 	struct sched_entity *se;
 	s64 delta;
-
+	/*
+	 * 计算理想的运行时间或者说应该运行的时长
+	 *
+	 */
 	ideal_runtime = sched_slice(cfs_rq, curr);
 	delta_exec = curr->sum_exec_runtime - curr->prev_sum_exec_runtime;
 	if (delta_exec > ideal_runtime) {
+		/*
+		 * 跑到这里说明，当前进程已经运行了足够多的时间，触发调度
+		 *
+		 */
 		resched_curr(rq_of(cfs_rq));
 		/*
 		 * The current task ran long enough, ensure it doesn't get
@@ -4502,10 +4582,21 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
 	/*
 	 * Update run-time statistics of the 'current'.
 	 */
+	/*
+	 * 更新当前进程的一些统计信息
+	 */
 	update_curr(cfs_rq);
 
 	/*
 	 * Ensure that runnable average is periodically updated.
+	 */
+
+	/*
+	 * 这里主要是PELT(per entity load tracking)的部分，这块相对比较复杂
+	 *
+	 * PELT的主要思想就是通过对历史数据的统计得到当前进程对系统负载的贡献
+	 * 从而指导未来的调度包括负载均衡。
+	 *
 	 */
 	update_load_avg(cfs_rq, curr, UPDATE_TG);
 	update_cfs_group(curr);
@@ -4526,7 +4617,11 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
 			hrtimer_active(&rq_of(cfs_rq)->hrtick_timer))
 		return;
 #endif
-
+	/*
+	 * 如果就一个进程，那不需要调度
+	 * 如果多个，就要检测是否需要调度
+	 *
+	 */
 	if (cfs_rq->nr_running > 1)
 		check_preempt_tick(cfs_rq, curr);
 }
@@ -10640,9 +10735,19 @@ static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
 {
 	struct cfs_rq *cfs_rq;
 	struct sched_entity *se = &curr->se;
-
+	/*
+	 * 这里是针对组调度的，如果不是组调度，se->parent就是空，这里就只会循环一次
+	 *
+	 * */
 	for_each_sched_entity(se) {
 		cfs_rq = cfs_rq_of(se);
+		/*
+		 * 这个函数主要功能如下：
+		 *
+		 * 1.更新当前进程的一些统计信息，如虚拟运行时间等
+		 * 2.如果条件满足设置 TIF_NEED_RESCHED,触发抢占
+		 *
+		 * */
 		entity_tick(cfs_rq, se, queued);
 	}
 

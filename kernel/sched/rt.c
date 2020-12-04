@@ -1002,7 +1002,10 @@ static void update_curr_rt(struct rq *rq)
 
 	if (curr->sched_class != &rt_sched_class)
 		return;
-
+	/*
+	 * 计算 delta_exec 时间。
+	 *
+	 */
 	now = rq_clock_task(rq);
 	delta_exec = now - curr->se.exec_start;
 	if (unlikely((s64)delta_exec <= 0))
@@ -1010,7 +1013,9 @@ static void update_curr_rt(struct rq *rq)
 
 	schedstat_set(curr->se.statistics.exec_max,
 		      max(curr->se.statistics.exec_max, delta_exec));
-
+	/*
+	 * 计算当前进程真实运行时间
+	 */
 	curr->se.sum_exec_runtime += delta_exec;
 	account_group_exec_runtime(curr, delta_exec);
 
