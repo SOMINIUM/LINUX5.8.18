@@ -399,13 +399,37 @@ struct util_est {
  * issues.
  */
 struct sched_avg {
+    /*
+     * 上次更新时间
+     */
 	u64				last_update_time;
+    /*
+     * 等待调度的时间+运行的时间
+     */
 	u64				load_sum;
+    /*
+     * 等待调度的时间
+     */
 	u64				runnable_sum;
+    /*
+     * 运行的时间
+     */
 	u32				util_sum;
+    /*
+     * 这个值就是不満1024的那部分值 = delta % 1024
+     */
 	u32				period_contrib;
+    /*
+     * 等待调度的时间+运行的时间 计算出的平均值
+     */
 	unsigned long			load_avg;
+    /*
+     * 等待调度的时间 计算出的平均值
+     */
 	unsigned long			runnable_avg;
+    /*
+     * 运行的时间 计算出的平均值
+     */
 	unsigned long			util_avg;
 	struct util_est			util_est;
 } ____cacheline_aligned;
@@ -754,6 +778,9 @@ struct task_struct {
 	struct mm_struct		*active_mm;
 
 	/* Per-thread vma caching: */
+    /*
+     * 最近刚刚使用过的vma集合
+     */
 	struct vmacache			vmacache;
 
 #ifdef SPLIT_RSS_COUNTING

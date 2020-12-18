@@ -27,7 +27,13 @@
  * pointing to this anon_vma once its vma list is empty.
  */
 struct anon_vma {
+    /*
+     * av根
+     */
 	struct anon_vma *root;		/* Root of this anon_vma tree */
+    /*
+     * 读写信号量
+     */
 	struct rw_semaphore rwsem;	/* W: modification, R: walking the list */
 	/*
 	 * The refcount is taken on an anon_vma when there is no
@@ -36,6 +42,9 @@ struct anon_vma {
 	 * the reference is responsible for clearing up the
 	 * anon_vma if they are the last user on release
 	 */
+    /*
+     * 引用计数
+     */
 	atomic_t refcount;
 
 	/*
@@ -44,8 +53,13 @@ struct anon_vma {
 	 * This counter is used for making decision about reusing anon_vma
 	 * instead of forking new one. See comments in function anon_vma_clone.
 	 */
+    /*
+     * 所处的深度
+     */
 	unsigned degree;
-
+    /*
+     * 父av
+     */
 	struct anon_vma *parent;	/* Parent of this anon_vma */
 
 	/*
@@ -75,9 +89,21 @@ struct anon_vma {
  * which link all the VMAs associated with this anon_vma.
  */
 struct anon_vma_chain {
+    /*
+     * 对应的vma
+     */
 	struct vm_area_struct *vma;
+    /*
+     * 对应的va
+     */
 	struct anon_vma *anon_vma;
+    /*
+     * 链表
+     */
 	struct list_head same_vma;   /* locked by mmap_lock & page_table_lock */
+    /*
+     * 红黑树节点
+     */
 	struct rb_node rb;			/* locked by anon_vma->rwsem */
 	unsigned long rb_subtree_last;
 #ifdef CONFIG_DEBUG_VM_RB
@@ -147,6 +173,9 @@ int anon_vma_fork(struct vm_area_struct *, struct vm_area_struct *);
 
 static inline int anon_vma_prepare(struct vm_area_struct *vma)
 {
+    /*
+     * 如果存在直接返回
+     */
 	if (likely(vma->anon_vma))
 		return 0;
 
@@ -260,15 +289,30 @@ int page_mapped_in_vma(struct page *page, struct vm_area_struct *vma);
  * invalid_vma: for skipping uninterested vma
  */
 struct rmap_walk_control {
+    /*
+     * 参数，在 rmap_one 和 invalid_vma 中会使用
+     */
 	void *arg;
 	/*
 	 * Return false if page table scanning in rmap_walk should be stopped.
 	 * Otherwise, return true.
 	 */
+    /*
+     * 断开vma上的一个pte映射
+     */
 	bool (*rmap_one)(struct page *page, struct vm_area_struct *vma,
 					unsigned long addr, void *arg);
+    /*
+     * 检测终止条件
+     */
 	int (*done)(struct page *page);
+    /*
+     * 以更好的方式获取 anon_lock
+     */
 	struct anon_vma *(*anon_lock)(struct page *page);
+    /*
+     * 跳过一个无效的vma
+     */
 	bool (*invalid_vma)(struct vm_area_struct *vma, void *arg);
 };
 

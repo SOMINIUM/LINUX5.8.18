@@ -3349,6 +3349,10 @@ static vm_fault_t do_anonymous_page(struct vm_fault *vmf)
 	 *
 	 * Here we only have mmap_read_lock(mm).
 	 */
+	/*
+	 * 在这里通过伙伴系统分配物理页面来映射
+	 *
+	 */
 	if (pte_alloc(vma->vm_mm, vmf->pmd))
 		return VM_FAULT_OOM;
 
@@ -3379,6 +3383,12 @@ static vm_fault_t do_anonymous_page(struct vm_fault *vmf)
 	}
 
 	/* Allocate our own private page. */
+	/*
+	 * 为vma建立一个 struct anon_vma 和 struct anon_vma_chain
+	 *
+	 * 在RMAP中会使用
+	 *
+	 */
 	if (unlikely(anon_vma_prepare(vma)))
 		goto oom;
 	page = alloc_zeroed_user_highpage_movable(vma, vmf->address);
@@ -3420,6 +3430,10 @@ static vm_fault_t do_anonymous_page(struct vm_fault *vmf)
 	}
 
 	inc_mm_counter_fast(vma->vm_mm, MM_ANONPAGES);
+	 /*
+	 * 在RMAP中会使用
+	 *
+	 */
 	page_add_new_anon_rmap(page, vma, vmf->address, false);
 	lru_cache_add_active_or_unevictable(page, vma);
 setpte:
@@ -3859,10 +3873,17 @@ static vm_fault_t do_read_fault(struct vm_fault *vmf)
 	 * something).
 	 */
 	if (vma->vm_ops->map_pages && fault_around_bytes >> PAGE_SHIFT > 1) {
+		/*
+		 * 创建更多的映射，从而减少缺页中断的发生
+		 */
 		ret = do_fault_around(vmf);
 		if (ret)
 			return ret;
 	}
+
+	/*
+	 * 创建新的page cache
+	 */
 
 	ret = __do_fault(vmf);
 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
@@ -3992,10 +4013,19 @@ static vm_fault_t do_fault(struct vm_fault *vmf)
 			pte_unmap_unlock(vmf->pte, vmf->ptl);
 		}
 	} else if (!(vmf->flags & FAULT_FLAG_WRITE))
+		/*
+		 * 只读异常
+		 */
 		ret = do_read_fault(vmf);
 	else if (!(vma->vm_flags & VM_SHARED))
+		/*
+		 * 写时异常 COW
+		 */
 		ret = do_cow_fault(vmf);
 	else
+		/*
+		 * 在共享映射中出现异常
+		 */
 		ret = do_shared_fault(vmf);
 
 	/* preallocated pagetable is unused: free it */
@@ -4230,12 +4260,21 @@ static vm_fault_t handle_pte_fault(struct vm_fault *vmf)
 
 	if (!vmf->pte) {
 		if (vma_is_anonymous(vmf->vma))
+			/*
+			 * 对于匿名页面
+			 */
 			return do_anonymous_page(vmf);
 		else
+			/*
+			 * 对于文件映射
+			 */
 			return do_fault(vmf);
 	}
 
 	if (!pte_present(vmf->orig_pte))
+		/*
+		 * 页面被交换到swap分区的情况
+		 */
 		return do_swap_page(vmf);
 
 	if (pte_protnone(vmf->orig_pte) && vma_is_accessible(vmf->vma))
@@ -4249,6 +4288,9 @@ static vm_fault_t handle_pte_fault(struct vm_fault *vmf)
 		goto unlock;
 	}
 	if (vmf->flags & FAULT_FLAG_WRITE) {
+		/*
+		 * 写时复制的处理
+		 */
 		if (!pte_write(entry))
 			return do_wp_page(vmf);
 		entry = pte_mkdirty(entry);
@@ -4366,7 +4408,9 @@ retry_pud:
 			}
 		}
 	}
-
+	/*
+	 * 处理 pte 项
+	 */
 	return handle_pte_fault(&vmf);
 }
 
@@ -4404,6 +4448,9 @@ vm_fault_t handle_mm_fault(struct vm_area_struct *vma, unsigned long address,
 	if (unlikely(is_vm_hugetlb_page(vma)))
 		ret = hugetlb_fault(vma->vm_mm, vma, address, flags);
 	else
+		/*
+		 * 核心处理流程
+		 */
 		ret = __handle_mm_fault(vma, address, flags);
 
 	if (flags & FAULT_FLAG_USER) {

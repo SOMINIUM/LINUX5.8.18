@@ -919,6 +919,10 @@ static void update_curr(struct cfs_rq *cfs_rq)
 	 *
 	 */
 	curr->vruntime += calc_delta_fair(delta_exec, curr);
+	/*
+	 * 更新整个队列的最小虚拟时间，这会在进程迁移，创建等场景会用到
+	 *
+	 */
 	update_min_vruntime(cfs_rq);
 
 	if (entity_is_task(curr)) {
@@ -928,7 +932,9 @@ static void update_curr(struct cfs_rq *cfs_rq)
 		cgroup_account_cputime(curtask, delta_exec);
 		account_group_exec_runtime(curtask, delta_exec);
 	}
-
+	/*
+	 * 带宽控制相差的更新
+	 */
 	account_cfs_rq_runtime(cfs_rq, delta_exec);
 }
 
@@ -3855,6 +3861,9 @@ static inline void update_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *s
 	 * Track task load average for carrying it to new CPU after migrated, and
 	 * track group sched_entity load average for task_h_load calc in migration
 	 */
+	/*
+	 * 计算PELT部分
+	 */
 	if (se->avg.last_update_time && !(flags & SKIP_AGE_LOAD))
 		__update_load_avg_se(now, cfs_rq, se);
 
@@ -4737,7 +4746,9 @@ static void __account_cfs_rq_runtime(struct cfs_rq *cfs_rq, u64 delta_exec)
 {
 	/* dock delta_exec before expiring quota (as it could span periods) */
 	cfs_rq->runtime_remaining -= delta_exec;
-
+	/*
+	 * 时间还有不需要申请
+	 */
 	if (likely(cfs_rq->runtime_remaining > 0))
 		return;
 
@@ -4754,6 +4765,9 @@ static void __account_cfs_rq_runtime(struct cfs_rq *cfs_rq, u64 delta_exec)
 static __always_inline
 void account_cfs_rq_runtime(struct cfs_rq *cfs_rq, u64 delta_exec)
 {
+	/*
+	 * 如果没有配置或者没有使能，直接返回
+	 */
 	if (!cfs_bandwidth_used() || !cfs_rq->runtime_enabled)
 		return;
 

@@ -66,6 +66,12 @@ struct mem_cgroup;
 #endif
 
 struct page {
+
+    /*
+     * flags中包括如下信息
+     * flags: | [SECTION] | [NODE] | ZONE | [LAST_CPUPID] | ... | FLAGS |
+     *
+     */
 	unsigned long flags;		/* Atomic flags, some possibly
 					 * updated asynchronously */
 	/*
@@ -83,6 +89,9 @@ struct page {
 			 */
 			struct list_head lru;
 			/* See page-flags.h for PAGE_MAPPING_FLAGS */
+            /*
+             * 页面所处的地址空间
+             */
 			struct address_space *mapping;
 			pgoff_t index;		/* Our offset within mapping. */
 			/**
@@ -180,6 +189,9 @@ struct page {
 		 * If the page can be mapped to userspace, encodes the number
 		 * of times this page is referenced by a page table.
 		 */
+        /*
+         * 映射计数
+         */
 		atomic_t _mapcount;
 
 		/*
@@ -195,6 +207,9 @@ struct page {
 	};
 
 	/* Usage count. *DO NOT USE DIRECTLY*. See page_ref.h */
+    /*
+     * 引用计数
+     */
 	atomic_t _refcount;
 
 #ifdef CONFIG_MEMCG
@@ -301,13 +316,25 @@ struct vm_userfaultfd_ctx {};
 struct vm_area_struct {
 	/* The first cache line has the info for VMA tree walking. */
 
+    /*
+     * 虚拟地址起始
+     */
 	unsigned long vm_start;		/* Our start address within vm_mm. */
+    /*
+     * 虚拟地址结束
+     */
 	unsigned long vm_end;		/* The first byte after our end address
 					   within vm_mm. */
 
 	/* linked list of VM areas per task, sorted by address */
+    /*
+     * 链表结点
+     */
 	struct vm_area_struct *vm_next, *vm_prev;
 
+    /*
+     * 红黑树结点
+     */
 	struct rb_node vm_rb;
 
 	/*
@@ -320,12 +347,20 @@ struct vm_area_struct {
 
 	/* Second cache line starts here. */
 
+    /*
+     * 所属的 mm_struct
+     *
+     */
 	struct mm_struct *vm_mm;	/* The address space we belong to. */
 
 	/*
 	 * Access permissions of this VMA.
 	 * See vmf_insert_mixed_prot() for discussion.
 	 */
+
+    /*
+     * vmm 访问权限
+     */
 	pgprot_t vm_page_prot;
 	unsigned long vm_flags;		/* Flags, see mm.h. */
 
@@ -349,11 +384,18 @@ struct vm_area_struct {
 	struct anon_vma *anon_vma;	/* Serialized by page_table_lock */
 
 	/* Function pointers to deal with this struct. */
+    /*
+     * vmm操作方法集合,通常使用文件映射
+     *
+     */
 	const struct vm_operations_struct *vm_ops;
 
 	/* Information about our backing store: */
 	unsigned long vm_pgoff;		/* Offset (within vm_file) in PAGE_SIZE
 					   units */
+    /*
+     * 映射的文件
+     */
 	struct file * vm_file;		/* File we map to (can be NULL). */
 	void * vm_private_data;		/* was vm_pte (shared mem) */
 
@@ -383,7 +425,13 @@ struct core_state {
 struct kioctx_table;
 struct mm_struct {
 	struct {
+        /*
+         * vma的链表头
+         */
 		struct vm_area_struct *mmap;		/* list of VMAs */
+        /*
+         * vma的红黑树根
+         */
 		struct rb_root mm_rb;
 		u64 vmacache_seqnum;                   /* per-thread vmacache */
 #ifdef CONFIG_MMU
@@ -461,6 +509,9 @@ struct mm_struct {
 		unsigned long def_flags;
 
 		spinlock_t arg_lock; /* protect the below fields */
+        /*
+         * malloc 需要分配的虚拟地址空间块应该大于 end_data
+         */
 		unsigned long start_code, end_code, start_data, end_data;
 		unsigned long start_brk, brk, start_stack;
 		unsigned long arg_start, arg_end, env_start, env_end;
@@ -687,6 +738,10 @@ typedef __bitwise unsigned int vm_fault_t;
  *				in DAX)
  * @VM_FAULT_HINDEX_MASK:	mask HINDEX value
  *
+ */
+
+/*
+ * 页错误的原因，详细见上面注释
  */
 enum vm_fault_reason {
 	VM_FAULT_OOM            = (__force vm_fault_t)0x000001,

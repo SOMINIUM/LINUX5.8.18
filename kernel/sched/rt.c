@@ -1021,13 +1021,20 @@ static void update_curr_rt(struct rq *rq)
 
 	curr->se.exec_start = now;
 	cgroup_account_cputime(curr, delta_exec);
+	/*
+	 * 如果没有使能，直接返回
+	 */
 
 	if (!rt_bandwidth_enabled())
 		return;
-
+	/*
+	 * 流控计算
+	 */
 	for_each_sched_rt_entity(rt_se) {
 		struct rt_rq *rt_rq = rt_rq_of_se(rt_se);
-
+		/*
+		 *  如果是 RUNTIME_INF,那就是不限时，也不会存在流控
+		 */
 		if (sched_rt_runtime(rt_rq) != RUNTIME_INF) {
 			raw_spin_lock(&rt_rq->rt_runtime_lock);
 			rt_rq->rt_time += delta_exec;
@@ -2393,6 +2400,9 @@ static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
 {
 	struct sched_rt_entity *rt_se = &p->rt;
 
+	/*
+	 * 更新实时进程的统计信息
+	 */
 	update_curr_rt(rq);
 	update_rt_rq_load_avg(rq_clock_pelt(rq), rq, 1);
 
@@ -2405,14 +2415,24 @@ static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
 	if (p->policy != SCHED_RR)
 		return;
 
+	/*
+	 * SCHED_RR,时间没有用完，直接返回，不需要调度。
+	 */
 	if (--p->rt.time_slice)
 		return;
-
+	/*
+	 * 重置时间片
+	 */
 	p->rt.time_slice = sched_rr_timeslice;
 
 	/*
 	 * Requeue to the end of queue if we (and all of our ancestors) are not
 	 * the only element on the queue
+	 */
+
+	/*
+	 * 时间片用完重新调度
+	 *
 	 */
 	for_each_sched_rt_entity(rt_se) {
 		if (rt_se->run_list.prev != rt_se->run_list.next) {

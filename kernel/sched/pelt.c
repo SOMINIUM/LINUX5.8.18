@@ -51,17 +51,35 @@ static u64 decay_load(u64 val, u64 n)
 	 *
 	 * To achieve constant time decay_load.
 	 */
+	/*
+	 * 这里就是如果大于32
+	 * 那么直接先除以 LOAD_AVG_PERIOD=32, 得到的值n,就是就是需要衰减的 1/2^n
+	 */
 	if (unlikely(local_n >= LOAD_AVG_PERIOD)) {
 		val >>= local_n / LOAD_AVG_PERIOD;
 		local_n %= LOAD_AVG_PERIOD;
 	}
 
+	/*
+	 * runnable_avg_yN_inv这个数组存放的是 Vn = y^n * 2^32
+	 * 就是为了避免做浮点运算
+	 *
+	 * 其实本质上还是val*y^n
+	 *
+	 */
 	val = mul_u64_u32_shr(val, runnable_avg_yN_inv[local_n], 32);
 	return val;
 }
 
 static u32 __accumulate_pelt_segments(u64 periods, u32 d1, u32 d3)
 {
+
+	/*
+	 * c1部分，也就是计算d1*y^n,
+	 * c2部分，也就是做了等比数列求和，优化的部分注释公式推导
+	 * c3部分，不需要计算直接加上就行
+	 *
+	 */
 	u32 c1, c2, c3 = d3; /* y^0 == 1 */
 
 	/*
@@ -73,6 +91,12 @@ static u32 __accumulate_pelt_segments(u64 periods, u32 d1, u32 d3)
 	 *            p-1
 	 * c2 = 1024 \Sum y^n
 	 *            n=1
+	 *
+	 * 这里我们加上一个中间推导过程
+	 *
+	 *     inf              inf            inf
+	 *  (\Sum y^n) y^p = \Sum y^(n+p) = \Sum y^n
+     *     n=0              n=0            n=p
 	 *
 	 *              inf        inf
 	 *    = 1024 ( \Sum y^n - \Sum y^n - y^0 )
@@ -112,14 +136,26 @@ accumulate_sum(u64 delta, struct sched_avg *sa,
 {
 	u32 contrib = (u32)delta; /* p == 0 -> delta < 1024 */
 	u64 periods;
-
+	/*
+	 * 这里加上这个值就可以将d1部分补成一个完整的1024
+	 * periods = delta / 1024
+	 */
 	delta += sa->period_contrib;
 	periods = delta / 1024; /* A period is 1024us (~1ms) */
 
 	/*
 	 * Step 1: decay old *_sum if we crossed period boundaries.
 	 */
+	/*
+	 * 这里如果连一个完整周期都没有也就是说只有d3部分，那就不需要计算了
+	 * 直接加上就行了。
+	 *
+	 */
 	if (periods) {
+		/*
+		 * 第一步 ，计算u*y^p，也就是d1部分
+		 * 其实就是老化上一次计算的结果
+		 */
 		sa->load_sum = decay_load(sa->load_sum, periods);
 		sa->runnable_sum =
 			decay_load(sa->runnable_sum, periods);
@@ -144,7 +180,15 @@ accumulate_sum(u64 delta, struct sched_avg *sa,
 					1024 - sa->period_contrib, delta);
 		}
 	}
+	/*
+	 * 这个其实存在值等于d3
+	 */
 	sa->period_contrib = delta;
+
+	/*
+	 * 设置相关的值
+	 *
+	 */
 
 	if (load)
 		sa->load_sum += load * contrib;
@@ -189,6 +233,9 @@ ___update_load_sum(u64 now, struct sched_avg *sa,
 		  unsigned long load, unsigned long runnable, int running)
 {
 	u64 delta;
+	/*
+	 * 计算delta值
+	 */
 
 	delta = now - sa->last_update_time;
 	/*
@@ -221,6 +268,9 @@ ___update_load_sum(u64 now, struct sched_avg *sa,
 	 *
 	 * Also see the comment in accumulate_sum().
 	 */
+	/*
+	 * 如果不在运行队列上，那么所的的sum都不需要统计
+	 */
 	if (!load)
 		runnable = running = 0;
 
@@ -230,6 +280,9 @@ ___update_load_sum(u64 now, struct sched_avg *sa,
 	 *
 	 * Step 1: accumulate *_sum since last_update_time. If we haven't
 	 * crossed period boundaries, finish.
+	 */
+	/*
+	 * 真正的计算过程
 	 */
 	if (!accumulate_sum(delta, sa, load, runnable, running))
 		return 0;
@@ -264,6 +317,9 @@ ___update_load_sum(u64 now, struct sched_avg *sa,
 static __always_inline void
 ___update_load_avg(struct sched_avg *sa, unsigned long load)
 {
+	/*
+	 * 这里的load的是指权重值
+	 */
 	u32 divider = LOAD_AVG_MAX - 1024 + sa->period_contrib;
 
 	/*
@@ -313,6 +369,11 @@ int __update_load_avg_blocked_se(u64 now, struct sched_entity *se)
 
 int __update_load_avg_se(u64 now, struct cfs_rq *cfs_rq, struct sched_entity *se)
 {
+	/*
+	 * ___update_load_sum是求和的过程
+	 * ___update_load_avg是求平均值的过程
+	 *
+	 */
 	if (___update_load_sum(now, &se->avg, !!se->on_rq, se_runnable(se),
 				cfs_rq->curr == se)) {
 

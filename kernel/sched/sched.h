@@ -342,19 +342,37 @@ extern struct list_head task_groups;
 struct cfs_bandwidth {
 #ifdef CONFIG_CFS_BANDWIDTH
 	raw_spinlock_t		lock;
+    /*
+     * 定时器周期
+     *
+     */
 	ktime_t			period;
+    /*
+     * 可运行限额
+     *
+     */
 	u64			quota;
+    /*
+     * 剩余可运行时间，第个周期开始设置为quota
+     */
 	u64			runtime;
 	s64			hierarchical_quota;
 
 	u8			idle;
 	u8			period_active;
 	u8			slack_started;
+    /*
+     * 用于更新的时间的定时器
+     */
 	struct hrtimer		period_timer;
 	struct hrtimer		slack_timer;
 	struct list_head	throttled_cfs_rq;
 
 	/* Statistics: */
+    /*
+     * 一些统计信息
+     *
+     */
 	int			nr_periods;
 	int			nr_throttled;
 	u64			throttled_time;
@@ -367,8 +385,16 @@ struct task_group {
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
 	/* schedulable entities of this group on each CPU */
+    /*
+     * 组调度实体，如何是root_task_group,那么这值为空
+     *
+     */
 	struct sched_entity	**se;
 	/* runqueue "owned" by this group on each CPU */
+    /*
+     * 组对应的cfs_rq
+     *
+     */
 	struct cfs_rq		**cfs_rq;
 	unsigned long		shares;
 
@@ -383,6 +409,10 @@ struct task_group {
 #endif
 
 #ifdef CONFIG_RT_GROUP_SCHED
+    /*
+     * 下面这两个和cfs基本一样
+     *
+     */
 	struct sched_rt_entity	**rt_se;
 	struct rt_rq		**rt_rq;
 
@@ -573,12 +603,21 @@ struct cfs_rq {
 	struct task_group	*tg;	/* group that "owns" this runqueue */
 
 #ifdef CONFIG_CFS_BANDWIDTH
+    /*
+     * 是否开启带宽限制
+     */
 	int			runtime_enabled;
+    /*
+     * 时间片剩余时间，当剩余时间小于等于0的时候，重新申请时间片
+     * */
 	s64			runtime_remaining;
 
 	u64			throttled_clock;
 	u64			throttled_clock_task;
 	u64			throttled_clock_task_time;
+    /*
+     * 是否被 throttled
+     * */
 	int			throttled;
 	int			throttle_count;
 	struct list_head	throttled_list;

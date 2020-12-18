@@ -186,7 +186,9 @@ int __anon_vma_prepare(struct vm_area_struct *vma)
 	struct anon_vma_chain *avc;
 
 	might_sleep();
-
+	/*
+	 * 通过slxb分配一段内存
+	 */
 	avc = anon_vma_chain_alloc(GFP_KERNEL);
 	if (!avc)
 		goto out_enomem;
@@ -194,6 +196,9 @@ int __anon_vma_prepare(struct vm_area_struct *vma)
 	anon_vma = find_mergeable_anon_vma(vma);
 	allocated = NULL;
 	if (!anon_vma) {
+		/*
+		 * 通过slxb分配一段内存
+		 */
 		anon_vma = anon_vma_alloc();
 		if (unlikely(!anon_vma))
 			goto out_enomem_free_avc;
@@ -204,7 +209,13 @@ int __anon_vma_prepare(struct vm_area_struct *vma)
 	/* page_table_lock to protect against threads */
 	spin_lock(&mm->page_table_lock);
 	if (likely(!vma->anon_vma)) {
+		/*
+		 * 设置vma->anon_vma
+		 */
 		vma->anon_vma = anon_vma;
+		/*
+		 * 放入链表
+		 */
 		anon_vma_chain_link(vma, avc, anon_vma);
 		/* vma reference or self-parent link for new root */
 		anon_vma->degree++;
@@ -1053,9 +1064,16 @@ static void __page_set_anon_rmap(struct page *page,
 	 */
 	if (!exclusive)
 		anon_vma = anon_vma->root;
-
+	/*
+	 * 设置页相关值
+	 */
 	anon_vma = (void *) anon_vma + PAGE_MAPPING_ANON;
 	page->mapping = (struct address_space *) anon_vma;
+	/*
+	 *  linear_page_index 计算 address 在vma中的所在的页面
+	 *  相对于起始页面的偏移值
+	 *
+	 */
 	page->index = linear_page_index(vma, address);
 }
 
@@ -1185,6 +1203,9 @@ void page_add_new_anon_rmap(struct page *page,
 		/* Anon THP always mapped first with PMD */
 		VM_BUG_ON_PAGE(PageTransCompound(page), page);
 		/* increment count (starts at -1) */
+		/*
+		 * 设置 _mapcount = 0
+		 */
 		atomic_set(&page->_mapcount, 0);
 	}
 	__mod_lruvec_page_state(page, NR_ANON_MAPPED, nr);
@@ -1859,6 +1880,9 @@ static void rmap_walk_anon(struct page *page, struct rmap_walk_control *rwc,
 		/* anon_vma disappear under us? */
 		VM_BUG_ON_PAGE(!anon_vma, page);
 	} else {
+		/*
+		 * 通过page->mapping找到anon_vma
+		 */
 		anon_vma = rmap_walk_anon_lock(page, rwc);
 	}
 	if (!anon_vma)
@@ -1943,6 +1967,9 @@ done:
 
 void rmap_walk(struct page *page, struct rmap_walk_control *rwc)
 {
+	/*
+	 * 在种不同的映射断开
+	 */
 	if (unlikely(PageKsm(page)))
 		rmap_walk_ksm(page, rwc);
 	else if (PageAnon(page))

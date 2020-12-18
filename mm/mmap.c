@@ -187,6 +187,10 @@ static struct vm_area_struct *remove_vma(struct vm_area_struct *vma)
 
 static int do_brk_flags(unsigned long addr, unsigned long request, unsigned long flags,
 		struct list_head *uf);
+
+/*
+ * malloc 接口
+ */
 SYSCALL_DEFINE1(brk, unsigned long, brk)
 {
 	unsigned long retval;
@@ -216,6 +220,9 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
 #else
 	min_brk = mm->start_brk;
 #endif
+	/*
+	 * 如果比最小的brk地址还，直接返回错误
+	 */
 	if (brk < min_brk)
 		goto out;
 
@@ -224,6 +231,11 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
 	 * of oldbrk with newbrk then it can escape the test and let the data
 	 * segment grow beyond its set limit the in case where the limit is
 	 * not page aligned -Ram Gupta
+	 */
+
+	/*
+	 * brk边界检查,失败直接返回
+	 *
 	 */
 	if (check_data_rlimit(rlimit(RLIMIT_DATA), brk, mm->start_brk,
 			      mm->end_data, mm->start_data))
@@ -265,11 +277,18 @@ SYSCALL_DEFINE1(brk, unsigned long, brk)
 		goto out;
 
 	/* Ok, looks good - let it rip. */
+	/*
+	 * 真正的分配一块虚拟地址空间
+	 *
+	 */
 	if (do_brk_flags(oldbrk, newbrk-oldbrk, 0, &uf) < 0)
 		goto out;
 	mm->brk = brk;
 
 success:
+	/*
+	 * 下面的部分是检测是否需要马上分配物理内存，如果需要，立马分配
+	 */
 	populate = newbrk > oldbrk && (mm->def_flags & VM_LOCKED) != 0;
 	if (downgraded)
 		mmap_read_unlock(mm);
@@ -543,6 +562,9 @@ static int find_vma_links(struct mm_struct *mm, unsigned long addr,
 
 		if (vma_tmp->vm_end > addr) {
 			/* Fail if an existing vma overlaps the area */
+			/*
+			 * 如果有重叠则查找失败
+			 */
 			if (vma_tmp->vm_start < end)
 				return -ENOMEM;
 			__rb_link = &__rb_parent->rb_left;
@@ -2237,10 +2259,15 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
 	struct vm_area_struct *vma;
 
 	/* Check the cache first. */
+	/*
+	 * 在最近的刚刚使用过的vma集合中查找
+	 */
 	vma = vmacache_find(mm, addr);
 	if (likely(vma))
 		return vma;
-
+	/*
+	 * 在红黑树中查找
+	 */
 	rb_node = mm->mm_rb.rb_node;
 
 	while (rb_node) {
@@ -2256,7 +2283,9 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
 		} else
 			rb_node = rb_node->rb_right;
 	}
-
+	/*
+	 * 如果找到，就把它放到vmacache里
+	 */
 	if (vma)
 		vmacache_update(addr, vma);
 	return vma;
@@ -3061,6 +3090,9 @@ static int do_brk_flags(unsigned long addr, unsigned long len, unsigned long fla
 	vma->vm_pgoff = pgoff;
 	vma->vm_flags = flags;
 	vma->vm_page_prot = vm_get_page_prot(flags);
+	/*
+	 * 把分配好的vma插入链表和红黑树
+	 */
 	vma_link(mm, vma, prev, rb_link, rb_parent);
 out:
 	perf_event_mmap(vma);

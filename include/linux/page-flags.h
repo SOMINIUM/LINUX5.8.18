@@ -102,34 +102,58 @@
  * SPARSEMEM_EXTREME with !SPARSEMEM_VMEMMAP).
  */
 enum pageflags {
+    /*页面已经锁定，不要使用*/
 	PG_locked,		/* Page is locked. Don't touch. */
+    /*在LRU中会使用到*/
 	PG_referenced,
+    /*用于页面缓存，表示已经成功读取并缓存到该页*/
 	PG_uptodate,
+    /*脏页面，需要和外部存储器同步*/
 	PG_dirty,
+    /*表明该页处于LRU链表中*/
 	PG_lru,
+    /*表明该页处理LRU的active链表中*/
 	PG_active,
+    /**/
 	PG_workingset,
+    /**/
 	PG_waiters,		/* Page has waiters, check its waitqueue. Must be bit #7 and in the same byte as "PG_locked" */
+    /*页面发生过IO错误*/
 	PG_error,
+    /*页面用于slab*/
 	PG_slab,
+    /**/
 	PG_owner_priv_1,	/* Owner use. If pagecache, fs may use*/
+    /**/
 	PG_arch_1,
+    /*页面需要保留，不可swap*/
 	PG_reserved,
+    /*页面是有效的*/
 	PG_private,		/* If pagecache, has fs-private data */
+    /**/
 	PG_private_2,		/* If pagecache, has fs aux data */
+    /*页面正在回写*/
 	PG_writeback,		/* Page is under writeback */
+    /**/
 	PG_head,		/* A head page */
+    /**/
 	PG_mappedtodisk,	/* Has blocks allocated on-disk */
+    /*页面将被回收*/
 	PG_reclaim,		/* To be reclaimed asap */
+    /**/
 	PG_swapbacked,		/* Page is backed by RAM/swap */
+    /*页面不可被回收*/
 	PG_unevictable,		/* Page is "unevictable"  */
 #ifdef CONFIG_MMU
+    /**/
 	PG_mlocked,		/* Page is vma mlocked */
 #endif
 #ifdef CONFIG_ARCH_USES_PG_UNCACHED
+    /**/
 	PG_uncached,		/* Page has been mapped as uncached */
 #endif
 #ifdef CONFIG_MEMORY_FAILURE
+    /**/
 	PG_hwpoison,		/* hardware poisoned page. Don't touch */
 #endif
 #if defined(CONFIG_IDLE_PAGE_TRACKING) && defined(CONFIG_64BIT)

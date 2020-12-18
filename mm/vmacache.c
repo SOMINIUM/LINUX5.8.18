@@ -58,6 +58,9 @@ static bool vmacache_valid(struct mm_struct *mm)
 	return true;
 }
 
+/*
+ * 在最近的刚刚使用过的vma集合中查找
+ */
 struct vm_area_struct *vmacache_find(struct mm_struct *mm, unsigned long addr)
 {
 	int idx = VMACACHE_HASH(addr);

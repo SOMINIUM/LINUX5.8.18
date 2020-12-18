@@ -59,8 +59,12 @@ EXPORT_SYMBOL(__mutex_init);
  * Bit1 indicates unlock needs to hand the lock to the top-waiter
  * Bit2 indicates handoff has been done and we're waiting for pickup.
  */
+
+/*等待队列不为空，unlock时需要执行唤醒操作*/
 #define MUTEX_FLAG_WAITERS	0x01
+/*unlock时需要将锁传给顶部等待者*/
 #define MUTEX_FLAG_HANDOFF	0x02
+/*锁的交接已经完成，等待被取走*/
 #define MUTEX_FLAG_PICKUP	0x04
 
 #define MUTEX_FLAGS		0x07
@@ -104,16 +108,23 @@ static inline unsigned long __owner_flags(unsigned long owner)
 /*
  * Trylock variant that retuns the owning task on failure.
  */
+
+/*
+ * 非阻塞尝试获取锁，如果失败返回锁的持有者
+ *
+ */
 static inline struct task_struct *__mutex_trylock_or_owner(struct mutex *lock)
 {
 	unsigned long owner, curr = (unsigned long)current;
 
+	/*获取锁持有者*/
 	owner = atomic_long_read(&lock->owner);
 	for (;;) { /* must loop, can race against a flag */
 		unsigned long old, flags = __owner_flags(owner);
 		unsigned long task = owner & ~MUTEX_FLAGS;
 
 		if (task) {
+			/*如果所有者不是当前进程则返回所有者*/
 			if (likely(task != curr))
 				break;
 
@@ -133,14 +144,15 @@ static inline struct task_struct *__mutex_trylock_or_owner(struct mutex *lock)
 		 * if we (accidentally) set the bit on an unlocked mutex.
 		 */
 		flags &= ~MUTEX_FLAG_HANDOFF;
-
+		/*如果当前所有者为空，则尝试获取锁*/
 		old = atomic_long_cmpxchg_acquire(&lock->owner, owner, curr | flags);
 		if (old == owner)
+			/*这里条件成立，则返回0,获取成功*/
 			return NULL;
 
 		owner = old;
 	}
-
+	/*获取失败，返回锁的所有者*/
 	return __owner_task(owner);
 }
 
@@ -167,6 +179,11 @@ static __always_inline bool __mutex_trylock_fast(struct mutex *lock)
 {
 	unsigned long curr = (unsigned long)current;
 	unsigned long zero = 0UL;
+	/*
+	 * 如果 lock->owner == 0,说明没有人持有锁，直接把 curr 赋值给
+	 * lock->owner,然后返回，否则返回 0
+	 *
+	 */
 
 	if (atomic_long_try_cmpxchg_acquire(&lock->owner, &zero, curr))
 		return true;
@@ -279,7 +296,10 @@ static void __sched __mutex_lock_slowpath(struct mutex *lock);
 void __sched mutex_lock(struct mutex *lock)
 {
 	might_sleep();
-
+	/*
+	 * 	如果快速获取锁不行，再进行慢速获取锁
+	 *
+	 */
 	if (!__mutex_trylock_fast(lock))
 		__mutex_lock_slowpath(lock);
 }
@@ -565,6 +585,8 @@ bool mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner,
 		/*
 		 * Use vcpu_is_preempted to detect lock holder preemption issue.
 		 */
+
+		/*如果当前进程不在运行队列上，意味者短时间内不可能释放锁*/
 		if (!owner->on_cpu || need_resched() ||
 				vcpu_is_preempted(task_cpu(owner))) {
 			ret = false;
@@ -646,6 +668,8 @@ mutex_optimistic_spin(struct mutex *lock, struct ww_acquire_ctx *ww_ctx,
 		 * is not going to take OSQ lock anyway, there is no need
 		 * to call mutex_can_spin_on_owner().
 		 */
+
+		/*乐观自旋前的检测*/
 		if (!mutex_can_spin_on_owner(lock))
 			goto fail;
 
@@ -654,6 +678,8 @@ mutex_optimistic_spin(struct mutex *lock, struct ww_acquire_ctx *ww_ctx,
 		 * acquire the mutex all at once, the spinners need to take a
 		 * MCS (queued) lock first before spinning on the owner field.
 		 */
+
+		/*乐观自旋*/
 		if (!osq_lock(&lock->osq))
 			goto fail;
 	}
@@ -662,6 +688,7 @@ mutex_optimistic_spin(struct mutex *lock, struct ww_acquire_ctx *ww_ctx,
 		struct task_struct *owner;
 
 		/* Try to acquire the mutex... */
+		/*经过乐观自旋后，再次尝试获取锁*/
 		owner = __mutex_trylock_or_owner(lock);
 		if (!owner)
 			break;
@@ -954,6 +981,11 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
 
 	preempt_disable();
 	mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
+	/*
+	 * if的逻辑是
+	 * 首先尝试获取锁，如果不成功，则进行乐观自旋获取锁
+	 *
+	 */
 
 	if (__mutex_trylock(lock) ||
 	    mutex_optimistic_spin(lock, ww_ctx, use_ww_ctx, NULL)) {
@@ -968,6 +1000,10 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
 	spin_lock(&lock->wait_lock);
 	/*
 	 * After waiting to acquire the wait_lock, try again.
+	 */
+	/*
+	 * 获取到 spin_lock 之后再次尝试获取
+	 *
 	 */
 	if (__mutex_trylock(lock)) {
 		if (use_ww_ctx && ww_ctx)
@@ -1003,6 +1039,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
 	waiter.task = current;
 
 	set_current_state(state);
+	/*到这里还没有获取到锁就会进入循环，在循环中可能将自己调度出去*/
 	for (;;) {
 		/*
 		 * Once we hold wait_lock, we're serialized against
@@ -1030,6 +1067,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
 		}
 
 		spin_unlock(&lock->wait_lock);
+		/*经过一系列的尝试之后，还不能获取锁，则将自己调度出去*/
 		schedule_preempt_disabled();
 
 		/*
@@ -1361,6 +1399,7 @@ EXPORT_SYMBOL_GPL(mutex_lock_io);
 static noinline void __sched
 __mutex_lock_slowpath(struct mutex *lock)
 {
+	/*慢速获取锁*/
 	__mutex_lock(lock, TASK_UNINTERRUPTIBLE, 0, NULL, _RET_IP_);
 }
 

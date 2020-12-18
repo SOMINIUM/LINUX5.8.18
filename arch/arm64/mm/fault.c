@@ -406,6 +406,9 @@ static void do_bad_area(unsigned long addr, unsigned int esr, struct pt_regs *re
 static vm_fault_t __do_page_fault(struct mm_struct *mm, unsigned long addr,
 			   unsigned int mm_flags, unsigned long vm_flags)
 {
+	/*
+	 * 通过地址来查找vma
+	 */
 	struct vm_area_struct *vma = find_vma(mm, addr);
 
 	if (unlikely(!vma))
@@ -428,6 +431,9 @@ static vm_fault_t __do_page_fault(struct mm_struct *mm, unsigned long addr,
 	 */
 	if (!(vma->vm_flags & vm_flags))
 		return VM_FAULT_BADACCESS;
+	/*
+	 * handle_mm_fault 缺页异常核心处理函数
+	 */
 	return handle_mm_fault(vma, addr & PAGE_MASK, mm_flags);
 }
 
@@ -445,6 +451,14 @@ static bool is_write_abort(unsigned int esr)
 	return (esr & ESR_ELx_WNR) && !(esr & ESR_ELx_CM);
 }
 
+/*
+ * 缺页异常处理
+ * 参数：
+ * 		addr 失效地址
+ * 		esr  失效状态
+ * 		regs CPU寄存器
+ *
+ */
 static int __kprobes do_page_fault(unsigned long addr, unsigned int esr,
 				   struct pt_regs *regs)
 {
@@ -515,11 +529,16 @@ retry:
 		}
 #endif
 	}
-
+	/*
+	 * 真正的处理入口
+	 */
 	fault = __do_page_fault(mm, addr, mm_flags, vm_flags);
 	major |= fault & VM_FAULT_MAJOR;
 
 	/* Quick path to respond to signals */
+	/*
+	 * 这里就是缺页异常处理成功后直接返回
+	 */
 	if (fault_signal_pending(fault, regs)) {
 		if (!user_mode(regs))
 			goto no_context;
@@ -536,6 +555,11 @@ retry:
 
 	/*
 	 * Handle the "normal" (no error) case first.
+	 */
+
+	/*
+	 * perf事件相差的处理
+	 *
 	 */
 	if (likely(!(fault & (VM_FAULT_ERROR | VM_FAULT_BADMAP |
 			      VM_FAULT_BADACCESS)))) {
@@ -571,10 +595,19 @@ retry:
 		 * userspace (which will retry the fault, or kill us if we got
 		 * oom-killed).
 		 */
+
+		/*
+		 * 内存不足, 调用oom killer,用户将retry the fault
+		 *
+		 */
 		pagefault_out_of_memory();
 		return 0;
 	}
 
+	/*
+	 *  下面这些就是内存已经无法处理，只是发一些信号
+	 *
+	 */
 	inf = esr_to_fault_info(esr);
 	set_thread_esr(addr, esr);
 	if (fault & VM_FAULT_SIGBUS) {
@@ -607,6 +640,9 @@ retry:
 	return 0;
 
 no_context:
+	/*
+	 * 内核态的缺页异常处理
+	 */
 	__do_kernel_fault(addr, esr, regs);
 	return 0;
 }
