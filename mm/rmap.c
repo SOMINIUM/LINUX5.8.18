@@ -875,9 +875,15 @@ int page_referenced(struct page *page,
 	};
 
 	*vm_flags = 0;
+	/*
+	 * page->_mapcount 引用计数值
+	 */
 	if (!pra.mapcount)
 		return 0;
 
+	/*
+	 * page->_mapping 是否为空
+	 */
 	if (!page_rmapping(page))
 		return 0;
 
@@ -895,7 +901,9 @@ int page_referenced(struct page *page,
 	if (memcg) {
 		rwc.invalid_vma = invalid_page_referenced_vma;
 	}
-
+	/*
+	 * 遍历页面把的pte，然后调用 page_referenced_one
+	 */
 	rmap_walk(page, &rwc);
 	*vm_flags = pra.vm_flags;
 

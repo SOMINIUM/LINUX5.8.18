@@ -424,6 +424,9 @@ void mark_page_accessed(struct page *page)
 	page = compound_head(page);
 
 	if (!PageReferenced(page)) {
+		/*
+		 * 如果  PG_referenced == 0, 设置 PG_referenced
+		 */
 		SetPageReferenced(page);
 	} else if (PageUnevictable(page)) {
 		/*
@@ -438,10 +441,22 @@ void mark_page_accessed(struct page *page)
 		 * pagevec, mark it active and it'll be moved to the active
 		 * LRU on the next drain.
 		 */
+		/*
+		 * 如果 PG_active == 0
+		 */
 		if (PageLRU(page))
+			/*
+			 * 如果 page 在LRU ,则加入活跃LRU
+			 */
 			activate_page(page);
 		else
+			/*
+			 * 设置 PG_active = 1
+			 */
 			__lru_cache_activate_page(page);
+		/*
+		 * 清除 PG_referenced
+		 */
 		ClearPageReferenced(page);
 		workingset_activation(page);
 	}

@@ -979,20 +979,34 @@ void putback_lru_page(struct page *page)
 }
 
 enum page_references {
+	/*表示可以回收*/
 	PAGEREF_RECLAIM,
+	/*表示可以回收*/
 	PAGEREF_RECLAIM_CLEAN,
+	/*表示保留在不活跃的链表中*/
 	PAGEREF_KEEP,
+	/*表示将迁移到活跃的链表中*/
 	PAGEREF_ACTIVATE,
 };
 
+/*
+ * 扫描不活跃的LRU链表时调用,返回 page_references
+ *
+ */
 static enum page_references page_check_references(struct page *page,
 						  struct scan_control *sc)
 {
 	int referenced_ptes, referenced_page;
 	unsigned long vm_flags;
 
+	/*
+	 * 检测有多少个引用的pte
+	 */
 	referenced_ptes = page_referenced(page, 1, sc->target_mem_cgroup,
 					  &vm_flags);
+	/*
+	 * 返回 PG_referenced值
+	 */
 	referenced_page = TestClearPageReferenced(page);
 
 	/*
@@ -1004,6 +1018,9 @@ static enum page_references page_check_references(struct page *page,
 
 	if (referenced_ptes) {
 		if (PageSwapBacked(page))
+			/*
+			 * 如果是匿名页面 返回 PAGEREF_ACTIVATE
+			 */
 			return PAGEREF_ACTIVATE;
 		/*
 		 * All mapped pages start out with page table
@@ -1021,11 +1038,18 @@ static enum page_references page_check_references(struct page *page,
 		 */
 		SetPageReferenced(page);
 
+		/*
+		 * 如果是二次引用的页面或者共享的页面 返回 PAGEREF_ACTIVATE
+		 */
 		if (referenced_page || referenced_ptes > 1)
 			return PAGEREF_ACTIVATE;
 
 		/*
 		 * Activate file-backed executable pages after first usage.
+		 */
+
+		/*
+		 * 如果是可执行文件的 page cache，返回 PAGEREF_ACTIVATE
 		 */
 		if (vm_flags & VM_EXEC)
 			return PAGEREF_ACTIVATE;
