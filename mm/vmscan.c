@@ -2685,8 +2685,13 @@ static void shrink_node_memcgs(pg_data_t *pgdat, struct scan_control *sc)
 		reclaimed = sc->nr_reclaimed;
 		scanned = sc->nr_scanned;
 
+		/*
+		 * 扫描LRU,看是否可以回收
+		 */
 		shrink_lruvec(lruvec, sc);
-
+		/*
+		 * 扫描slab,看是否可以回收
+		 */
 		shrink_slab(sc->gfp_mask, pgdat->node_id, memcg,
 			    sc->priority);
 
@@ -3601,6 +3606,11 @@ static int balance_pgdat(pg_data_t *pgdat, int order, int highest_zoneidx)
 	 * place so that parallel allocations that are near the watermark will
 	 * stall or direct reclaim until kswapd is finished.
 	 */
+	/*
+	 * 目前理解
+	 * boost 是为了促进内存回收
+	 *
+	 */
 	nr_boost_reclaim = 0;
 	for (i = 0; i <= highest_zoneidx; i++) {
 		zone = pgdat->node_zones + i;
@@ -3650,6 +3660,12 @@ restart:
 		 * on the grounds that the normal reclaim should be enough to
 		 * re-evaluate if boosting is required when kswapd next wakes.
 		 */
+		/*
+		 * 目前理解：
+		 * 这里是判断一个pgdat是否是平衡的，判断标准是，看pgdat上的
+		 * zone,看是否有一个能满足当前order的分配,就是看水位线是否能满足
+		 * 可以返回true
+		 */
 		balanced = pgdat_balanced(pgdat, sc.order, highest_zoneidx);
 		if (!balanced && nr_boost_reclaim) {
 			nr_boost_reclaim = 0;
@@ -3661,10 +3677,17 @@ restart:
 		 * eligible zones. Note that sc.reclaim_idx is not used as
 		 * buffer_heads_over_limit may have adjusted it.
 		 */
+		/*
+		 * 如果没有回收促进 nr_boost_reclaim 而且前也可以满足分配需求
+		 * 则不进行内存回收
+		 */
 		if (!nr_boost_reclaim && balanced)
 			goto out;
 
 		/* Limit the priority of boosting to avoid reclaim writeback */
+		/*
+		 * 通过控制回收优先级来避免脏页写回
+		 */
 		if (nr_boost_reclaim && sc.priority == DEF_PRIORITY - 2)
 			raise_priority = false;
 
@@ -3894,6 +3917,10 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int alloc_order, int reclaim_o
  * If there are applications that are active memory-allocators
  * (most normal use), this basically shouldn't matter.
  */
+
+/*
+ * 内存回收
+ */
 static int kswapd(void *p)
 {
 	unsigned int alloc_order, reclaim_order;
@@ -3930,6 +3957,9 @@ static int kswapd(void *p)
 							highest_zoneidx);
 
 kswapd_try_sleep:
+		/*
+		 * 检测去休眠
+		 */
 		kswapd_try_to_sleep(pgdat, alloc_order, reclaim_order,
 					highest_zoneidx);
 
@@ -3941,6 +3971,9 @@ kswapd_try_sleep:
 		WRITE_ONCE(pgdat->kswapd_highest_zoneidx, MAX_NR_ZONES);
 
 		ret = try_to_freeze();
+		/*
+		 * 检测退出
+		 */
 		if (kthread_should_stop())
 			break;
 
@@ -3961,6 +3994,9 @@ kswapd_try_sleep:
 		 */
 		trace_mm_vmscan_kswapd_wake(pgdat->node_id, highest_zoneidx,
 						alloc_order);
+		/*
+		 * balance_pgdat 回收核心函数
+		 */
 		reclaim_order = balance_pgdat(pgdat, alloc_order,
 						highest_zoneidx);
 		if (reclaim_order < alloc_order)
@@ -3993,6 +4029,10 @@ void wakeup_kswapd(struct zone *zone, gfp_t gfp_flags, int order,
 
 	pgdat = zone->zone_pgdat;
 	curr_idx = READ_ONCE(pgdat->kswapd_highest_zoneidx);
+	/***********************************************************/
+	/*
+	 * 设置 pgdat 参数
+	 */
 
 	if (curr_idx == MAX_NR_ZONES || curr_idx < highest_zoneidx)
 		WRITE_ONCE(pgdat->kswapd_highest_zoneidx, highest_zoneidx);
@@ -4000,6 +4040,7 @@ void wakeup_kswapd(struct zone *zone, gfp_t gfp_flags, int order,
 	if (READ_ONCE(pgdat->kswapd_order) < order)
 		WRITE_ONCE(pgdat->kswapd_order, order);
 
+	/***********************************************************/
 	if (!waitqueue_active(&pgdat->kswapd_wait))
 		return;
 
@@ -4021,6 +4062,9 @@ void wakeup_kswapd(struct zone *zone, gfp_t gfp_flags, int order,
 
 	trace_mm_vmscan_wakeup_kswapd(pgdat->node_id, highest_zoneidx, order,
 				      gfp_flags);
+	/*
+	 * 唤醒 kswapd
+	 */
 	wake_up_interruptible(&pgdat->kswapd_wait);
 }
 
