@@ -1489,6 +1489,9 @@ static noinline void __init kernel_init_freeable(void)
 
 	cad_pid = task_pid(current);
 
+	/*
+	 * 建立cpu拓扑
+	 */
 	smp_prepare_cpus(setup_max_cpus);
 
 	workqueue_init();
@@ -1499,6 +1502,9 @@ static noinline void __init kernel_init_freeable(void)
 	lockup_detector_init();
 
 	smp_init();
+	/*
+	 * 初始化调度域
+	 */
 	sched_init_smp();
 
 	padata_init();

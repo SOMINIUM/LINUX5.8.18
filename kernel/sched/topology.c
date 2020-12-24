@@ -1979,7 +1979,9 @@ build_sched_domains(const struct cpumask *cpu_map, struct sched_domain_attr *att
 
 	if (WARN_ON(cpumask_empty(cpu_map)))
 		goto error;
-
+	/*
+	 * 分配相关的内存
+	 */
 	alloc_state = __visit_domain_allocation_hell(&d, cpu_map);
 	if (alloc_state != sa_rootdomain)
 		goto error;
@@ -1987,6 +1989,9 @@ build_sched_domains(const struct cpumask *cpu_map, struct sched_domain_attr *att
 	tl_asym = asym_cpu_capacity_level(cpu_map);
 
 	/* Set up domains for CPUs specified by the cpu_map: */
+	/*
+	 * 构建调度域的父子关系
+	 */
 	for_each_cpu(i, cpu_map) {
 		struct sched_domain_topology_level *tl;
 
@@ -2002,8 +2007,14 @@ build_sched_domains(const struct cpumask *cpu_map, struct sched_domain_attr *att
 			if (WARN_ON(!topology_span_sane(tl, cpu_map, i)))
 				goto error;
 
+			/*
+			 * 从smt -> mc -> die建立父子关系
+			 */
 			sd = build_sched_domain(tl, cpu_map, attr, sd, dflags, i);
 
+			/*
+			 * 将最底层tl的sd赋值给d.sd
+			 */
 			if (tl == sched_domain_topology)
 				*per_cpu_ptr(d.sd, i) = sd;
 			if (tl->flags & SDTL_OVERLAP)
@@ -2014,6 +2025,9 @@ build_sched_domains(const struct cpumask *cpu_map, struct sched_domain_attr *att
 	}
 
 	/* Build the groups for the domains */
+	/*
+	 * 构建调度域的组关系
+	 */
 	for_each_cpu(i, cpu_map) {
 		for (sd = *per_cpu_ptr(d.sd, i); sd; sd = sd->parent) {
 			sd->span_weight = cpumask_weight(sched_domain_span(sd));
@@ -2028,6 +2042,9 @@ build_sched_domains(const struct cpumask *cpu_map, struct sched_domain_attr *att
 	}
 
 	/* Calculate CPU capacity for physical packages and nodes */
+	/*
+	 * CPU算力计算
+	 */
 	for (i = nr_cpumask_bits-1; i >= 0; i--) {
 		if (!cpumask_test_cpu(i, cpu_map))
 			continue;
@@ -2039,6 +2056,9 @@ build_sched_domains(const struct cpumask *cpu_map, struct sched_domain_attr *att
 	}
 
 	/* Attach the domains */
+	/*
+	 * 把调度域设置给rq
+	 */
 	rcu_read_lock();
 	for_each_cpu(i, cpu_map) {
 		rq = cpu_rq(i);

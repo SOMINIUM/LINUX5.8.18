@@ -6756,6 +6756,9 @@ void __init sched_init_smp(void)
 	 * happen.
 	 */
 	mutex_lock(&sched_domains_mutex);
+	/*
+	 * 初始化调度域
+	 */
 	sched_init_domains(cpu_active_mask);
 	mutex_unlock(&sched_domains_mutex);
 

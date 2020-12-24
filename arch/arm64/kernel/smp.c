@@ -734,6 +734,9 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
 	unsigned int cpu;
 	unsigned int this_cpu;
 
+	/*
+	 * 通过device tree建立拓扑
+	 */
 	init_cpu_topology();
 
 	this_cpu = smp_processor_id();

@@ -7420,15 +7420,26 @@ enum fbq_type { regular, remote, all };
  */
 enum group_type {
 	/* The group has spare capacity that can be used to run more tasks.  */
+	/*
+	 * 当前级存在备用算力
+	 */
 	group_has_spare = 0,
 	/*
 	 * The group is fully used and the tasks don't compete for more CPU
 	 * cycles. Nevertheless, some tasks might wait before running.
 	 */
+	/*
+	 * 算力全部被使用而且当前任务也不需要更多的cpu资源
+	 * 不过有可能有其它的任务等待执行
+	 *
+	 */
 	group_fully_busy,
 	/*
 	 * SD_ASYM_CPUCAPACITY only: One task doesn't fit with CPU's capacity
 	 * and must be migrated to a more powerful CPU.
+	 */
+	/*
+	 * 一个任务不适合当前cpu的算力，必须迁移到一个更强算力的cpu上
 	 */
 	group_misfit_task,
 	/*
@@ -7436,15 +7447,24 @@ enum group_type {
 	 * and the task should be migrated to it instead of running on the
 	 * current CPU.
 	 */
+	/*
+	 * 一个cpu具有更强的算力，任务可以迁移到这个cpu,从而让任务运行更好
+	 */
 	group_asym_packing,
 	/*
 	 * The tasks' affinity constraints previously prevented the scheduler
 	 * from balancing the load across the system.
 	 */
+	/*
+	 * 存在 affinity 约束，无法迁移
+	 */
 	group_imbalanced,
 	/*
 	 * The CPU is overloaded and can't provide expected CPU cycles to all
 	 * tasks.
+	 */
+	/*
+	 * cpu已经过载，无法提供更多的算力
 	 */
 	group_overloaded
 };
@@ -9256,6 +9276,10 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 	 * Compute the various statistics relevant for load balancing at
 	 * this level.
 	 */
+	/*
+	 * 更新本层级sched_group链表中，每个sched_group的负载
+	 * 选出busiest的一个sched_group
+	 */
 	update_sd_lb_stats(env, &sds);
 
 	if (sched_energy_enabled()) {
@@ -9273,10 +9297,16 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 		goto out_balanced;
 
 	/* Misfit tasks should be dealt with regardless of the avg load */
+	/*
+	 * 任务需要更强的cpu,强制迁移
+	 */
 	if (busiest->group_type == group_misfit_task)
 		goto force_balance;
 
 	/* ASYM feature bypasses nice load balance check */
+	/*
+	 * cpu算力大于任务需求,强制迁移
+	 */
 	if (busiest->group_type == group_asym_packing)
 		goto force_balance;
 
@@ -9298,6 +9328,9 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 	/*
 	 * When groups are overloaded, use the avg_load to ensure fairness
 	 * between tasks.
+	 */
+	/*
+	 * 当组已经过载，使用avg_load来确保平衡
 	 */
 	if (local->group_type == group_overloaded) {
 		/*
@@ -9573,6 +9606,9 @@ static int should_we_balance(struct lb_env *env)
 	 * In the newly idle case, we will allow all the CPUs
 	 * to do the newly idle load balance.
 	 */
+	/*
+	 * 如果idle == CPU_NEWLY_IDLE 直接返回成功
+	 */
 	if (env->idle == CPU_NEWLY_IDLE)
 		return 1;
 
@@ -9604,6 +9640,9 @@ static int load_balance(int this_cpu, struct rq *this_rq,
 	struct rq_flags rf;
 	struct cpumask *cpus = this_cpu_cpumask_var_ptr(load_balance_mask);
 
+	/*
+	 * 设置lb_env
+	 */
 	struct lb_env env = {
 		.sd		= sd,
 		.dst_cpu	= this_cpu,
@@ -9621,17 +9660,26 @@ static int load_balance(int this_cpu, struct rq *this_rq,
 	schedstat_inc(sd->lb_count[idle]);
 
 redo:
+	/*
+	 * 检测当前cpu是否适合作为 dst_cpu 来分担其它cpu负载
+	 */
 	if (!should_we_balance(&env)) {
 		*continue_balancing = 0;
 		goto out_balanced;
 	}
 
+	/*
+	 * 找出本层级中负载最重的调度组
+	 */
 	group = find_busiest_group(&env);
 	if (!group) {
 		schedstat_inc(sd->lb_nobusyg[idle]);
 		goto out_balanced;
 	}
 
+	/*
+	 * 找出负载最重的调度组中的最重的rq
+	 */
 	busiest = find_busiest_queue(&env, group);
 	if (!busiest) {
 		schedstat_inc(sd->lb_nobusyq[idle]);
@@ -9646,6 +9694,9 @@ redo:
 	env.src_rq = busiest;
 
 	ld_moved = 0;
+	/*
+	 * >1 表示至少可以迁移一个进程，=1 无需迁移
+	 */
 	if (busiest->nr_running > 1) {
 		/*
 		 * Attempt to move tasks. If find_busiest_group has found
@@ -9664,6 +9715,11 @@ more_balance:
 		 * cur_ld_moved - load moved in current iteration
 		 * ld_moved     - cumulative load moved across iterations
 		 */
+
+		/* 从 busiest rq 中 查看进程
+		 * cur_ld_moved - 迁移的进程数
+		 * ld_moved     - 需要迁移的负载大小
+		 */
 		cur_ld_moved = detach_tasks(&env);
 
 		/*
@@ -9676,6 +9732,9 @@ more_balance:
 
 		rq_unlock(busiest, &rf);
 
+		/*
+		 * 把任务迁移到当前 dst_cpu 上
+		 */
 		if (cur_ld_moved) {
 			attach_tasks(&env);
 			ld_moved += cur_ld_moved;
@@ -9683,6 +9742,9 @@ more_balance:
 
 		local_irq_restore(rf.flags);
 
+		/*
+		 * 如果设置了 LBF_NEED_BREAK 说明需要继续进行blance
+		 */
 		if (env.flags & LBF_NEED_BREAK) {
 			env.flags &= ~LBF_NEED_BREAK;
 			goto more_balance;
@@ -9707,6 +9769,13 @@ more_balance:
 		 * moreover subsequent load balance cycles should correct the
 		 * excess load moved.
 		 */
+
+		/*
+		 * 设置了LBF_DST_PINNED标志，并且env.imbalance > 0
+		 * 说明src_cpu上有些进程因为affinity的原因不能迁移到dst_cpu
+		 * 但是能迁移到同sg的new_dst_cpu上,把dst_cpu更改为new_dst_cpu，
+		 * 重新开始balance流程
+		 */
 		if ((env.flags & LBF_DST_PINNED) && env.imbalance > 0) {
 
 			/* Prevent to re-select dst_cpu via env's CPUs */
@@ -9728,6 +9797,10 @@ more_balance:
 		/*
 		 * We failed to reach balance because of affinity.
 		 */
+		/*
+		 * 设置了LBF_SOME_PINNED标志，说明有些进程因为affinity迁移失败
+		 * 设置当前sd的parent sd的 sgc->imbalance, 让parent sd做rebalance的概率增高
+		 */
 		if (sd_parent) {
 			int *group_imbalance = &sd_parent->groups->sgc->imbalance;
 
@@ -9736,6 +9809,11 @@ more_balance:
 		}
 
 		/* All tasks on this runqueue were pinned by CPU affinity */
+		/*
+		 * 如果LBF_ALL_PINNED标志置位,说明busiest_cpu因为affinity没有一个进程
+		 * 迁移成功,将busiest cpu从全局cpu mask去掉，重新做整个流程
+		 *
+		 */
 		if (unlikely(env.flags & LBF_ALL_PINNED)) {
 			__cpumask_clear_cpu(cpu_of(busiest), cpus);
 			/*
@@ -9755,6 +9833,9 @@ more_balance:
 		}
 	}
 
+	/*
+	 * 最终迁移的进程数ld_moved还是0，说明balance失败
+	 */
 	if (!ld_moved) {
 		schedstat_inc(sd->lb_failed[idle]);
 		/*
@@ -10016,14 +10097,28 @@ static void rebalance_domains(struct rq *rq, enum cpu_idle_type idle)
 	u64 max_cost = 0;
 
 	rcu_read_lock();
+	/*
+	 * 对cpu每个层级都进行一次blance
+	 */
 	for_each_domain(cpu, sd) {
 		/*
 		 * Decay the newidle max times here because this is a regular
 		 * visit to all the domains. Decay ~1% per second.
 		 */
+		/*
+		 * 比较当前时间 jiffies 与 sd->next_decay_max_lb_cost,
+		 * 如果 sd->next_decay_max_lb_cost - jiffies < 0
+		 * 说明时间到了，需要blance
+		 */
 		if (time_after(jiffies, sd->next_decay_max_lb_cost)) {
+			/*
+			 * 老化 max_newidle_lb_cost
+			 */
 			sd->max_newidle_lb_cost =
 				(sd->max_newidle_lb_cost * 253) / 256;
+			/*
+			 * 更新 next_decay_max_lb_cost
+			 */
 			sd->next_decay_max_lb_cost = jiffies + HZ;
 			need_decay = 1;
 		}
@@ -10039,7 +10134,9 @@ static void rebalance_domains(struct rq *rq, enum cpu_idle_type idle)
 				continue;
 			break;
 		}
-
+		/*
+		 * 计算当前层次schedule_domain的balance间隔时间
+		 */
 		interval = get_sd_balance_interval(sd, busy);
 
 		need_serialize = sd->flags & SD_SERIALIZE;
@@ -10047,7 +10144,9 @@ static void rebalance_domains(struct rq *rq, enum cpu_idle_type idle)
 			if (!spin_trylock(&balancing))
 				goto out;
 		}
-
+		/*
+		 * 时间已到，做 load_balance
+		 */
 		if (time_after_eq(jiffies, sd->last_balance + interval)) {
 			if (load_balance(cpu, rq, sd, idle, &continue_balancing)) {
 				/*
@@ -10083,6 +10182,9 @@ out:
 	 * next_balance will be updated only when there is a need.
 	 * When the cpu is attached to null domain for ex, it will not be
 	 * updated.
+	 */
+	/*
+	 * 更新rq的balance时间
 	 */
 	if (likely(update_next_balance)) {
 		rq->next_balance = next_balance;

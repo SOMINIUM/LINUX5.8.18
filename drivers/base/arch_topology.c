@@ -316,6 +316,9 @@ static int __init parse_core(struct device_node *core, int package_id,
 	struct device_node *t;
 
 	do {
+		/*
+		 * 处理cpu硬件线程
+		 */
 		snprintf(name, sizeof(name), "thread%d", i);
 		t = of_get_child_by_name(core, name);
 		if (t) {
@@ -334,6 +337,10 @@ static int __init parse_core(struct device_node *core, int package_id,
 		}
 		i++;
 	} while (t);
+
+	/*
+	 * 如果core不存在thread,直接解析cpu,arm平台不存在thread
+	 */
 
 	cpu = get_cpu_for_node(core);
 	if (cpu >= 0) {
@@ -374,6 +381,9 @@ static int __init parse_cluster(struct device_node *cluster, int depth)
 		c = of_get_child_by_name(cluster, name);
 		if (c) {
 			leaf = false;
+			/*
+			 * 多级cluster，继续递归搜索
+			 */
 			ret = parse_cluster(c, depth + 1);
 			of_node_put(c);
 			if (ret != 0)
@@ -427,6 +437,9 @@ static int __init parse_dt_topology(void)
 	int ret = 0;
 	int cpu;
 
+	/*
+	 * 找到/cpus节点
+	 */
 	cn = of_find_node_by_path("/cpus");
 	if (!cn) {
 		pr_err("No CPU information found in DT\n");
@@ -437,10 +450,16 @@ static int __init parse_dt_topology(void)
 	 * When topology is provided cpu-map is essentially a root
 	 * cluster with restricted subnodes.
 	 */
+	/*
+	 * 找到子节点 cpu-map
+	 */
 	map = of_get_child_by_name(cn, "cpu-map");
 	if (!map)
 		goto out;
 
+	/*
+	 * 解析 cpu-map 中 cluster
+	 */
 	ret = parse_cluster(map, 0);
 	if (ret != 0)
 		goto out_map;

@@ -4041,7 +4041,9 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
 
 	psi_memstall_enter(&pflags);
 	noreclaim_flag = memalloc_noreclaim_save();
-
+	/*
+	 * 尝试规整内存
+	 */
 	*compact_result = try_to_compact_pages(gfp_mask, order, alloc_flags, ac,
 								prio, &page);
 
@@ -4593,6 +4595,7 @@ retry_cpuset:
 		goto nopage;
 	/*
 	 * 如果设置了ALLOC_KSWAPD，那么启动kwapd线程回收内存
+	 * 异步回收内存
 	 * */
 	if (alloc_flags & ALLOC_KSWAPD)
 		wake_all_kswapds(order, gfp_mask, ac);

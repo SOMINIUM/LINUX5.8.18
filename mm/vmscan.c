@@ -65,6 +65,7 @@
 
 struct scan_control {
 	/* How many pages shrink_list() should reclaim */
+	/*应该回收的内存页面数*/
 	unsigned long nr_to_reclaim;
 
 	/*
@@ -2193,7 +2194,9 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
 			sc->skipped_deactivate = 1;
 		return 0;
 	}
-
+	/*
+	 * 扫描不活跃的LRU
+	 */
 	return shrink_inactive_list(nr_to_scan, lruvec, sc, lru);
 }
 
@@ -2690,7 +2693,7 @@ static void shrink_node_memcgs(pg_data_t *pgdat, struct scan_control *sc)
 		 */
 		shrink_lruvec(lruvec, sc);
 		/*
-		 * 扫描slab,看是否可以回收
+		 * 磁盘高速缓存进行回收(不要被名子迷惑)
 		 */
 		shrink_slab(sc->gfp_mask, pgdat->node_id, memcg,
 			    sc->priority);
@@ -2804,6 +2807,9 @@ again:
 			anon >> sc->priority;
 	}
 
+	/*
+	 * 扫描整个pgdat
+	 */
 	shrink_node_memcgs(pgdat, sc);
 
 	if (reclaim_state) {
@@ -3551,6 +3557,9 @@ static bool kswapd_shrink_node(pg_data_t *pgdat,
 	 * Historically care was taken to put equal pressure on all zones but
 	 * now pressure is applied based on node LRU order.
 	 */
+	/*
+	 * 回收
+	 */
 	shrink_node(pgdat, sc);
 
 	/*
@@ -3726,6 +3735,9 @@ restart:
 		 * There should be no need to raise the scanning priority if
 		 * enough pages are already being scanned that that high
 		 * watermark would be met at 100% efficiency.
+		 */
+		/*
+		 * 这里是真正执行回收的过程
 		 */
 		if (kswapd_shrink_node(pgdat, &sc))
 			raise_priority = false;

@@ -587,7 +587,9 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
 			}
 			goto isolate_fail;
 		}
-
+		/*
+		 * 如果页面还在伙伴系统中则不适合迁移
+		 */
 		if (!PageBuddy(page))
 			goto isolate_fail;
 
@@ -2101,6 +2103,9 @@ compact_zone(struct compact_control *cc, struct capture_control *capc)
 	INIT_LIST_HEAD(&cc->migratepages);
 
 	cc->migratetype = gfp_migratetype(cc->gfp_mask);
+	/*
+	 * 根据水位来判断是否需要进行内存规整
+	 */
 	ret = compaction_suitable(cc->zone, cc->order, cc->alloc_flags,
 							cc->highest_zoneidx);
 	/* Compaction is likely to fail */
@@ -2161,7 +2166,9 @@ compact_zone(struct compact_control *cc, struct capture_control *capc)
 				cc->free_pfn, end_pfn, sync);
 
 	migrate_prep_local();
-
+	/*
+	 * 调用 compact_finished 来判断迁移是否需要继续
+	 */
 	while ((ret = compact_finished(cc)) == COMPACT_CONTINUE) {
 		int err;
 		unsigned long start_pfn = cc->migrate_pfn;
@@ -2179,7 +2186,9 @@ compact_zone(struct compact_control *cc, struct capture_control *capc)
 		    pageblock_start_pfn(start_pfn)) {
 			cc->rescan = true;
 		}
-
+		/*
+		 * 寻找可迁移的页面
+		 */
 		switch (isolate_migratepages(cc)) {
 		case ISOLATE_ABORT:
 			ret = COMPACT_CONTENDED;
@@ -2203,7 +2212,9 @@ compact_zone(struct compact_control *cc, struct capture_control *capc)
 			last_migrated_pfn = start_pfn;
 			;
 		}
-
+		/*
+		 * 执行迁移合并
+		 */
 		err = migrate_pages(&cc->migratepages, compaction_alloc,
 				compaction_free, (unsigned long)cc, cc->mode,
 				MR_COMPACTION);
@@ -2214,6 +2225,9 @@ compact_zone(struct compact_control *cc, struct capture_control *capc)
 		/* All pages were either migrated or will be released */
 		cc->nr_migratepages = 0;
 		if (err) {
+			/*
+			 * 成功迁移之后，把页面返还给伙伴系统或者cpu`s pcp
+			 */
 			putback_movable_pages(&cc->migratepages);
 			/*
 			 * migrate_pages() may return -ENOMEM when scanners meet
@@ -2372,6 +2386,9 @@ enum compact_result try_to_compact_pages(gfp_t gfp_mask, unsigned int order,
 	trace_mm_compaction_try_to_compact_pages(order, gfp_mask, prio);
 
 	/* Compact each zone in the list */
+	/*
+	 * 对所有的zone进行规整
+	 */
 	for_each_zone_zonelist_nodemask(zone, z, ac->zonelist,
 					ac->highest_zoneidx, ac->nodemask) {
 		enum compact_result status;
@@ -2428,6 +2445,10 @@ static void compact_node(int nid)
 	pg_data_t *pgdat = NODE_DATA(nid);
 	int zoneid;
 	struct zone *zone;
+	/*
+	 * 初始化迁移控制结构体
+	 *
+	 */
 	struct compact_control cc = {
 		.order = -1,
 		.mode = MIGRATE_SYNC,
