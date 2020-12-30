@@ -2404,6 +2404,9 @@ static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
 	 * 更新实时进程的统计信息
 	 */
 	update_curr_rt(rq);
+	/*
+	 * pelt 更新rq的avg_rt
+	 */
 	update_rt_rq_load_avg(rq_clock_pelt(rq), rq, 1);
 
 	watchdog(rq, p);

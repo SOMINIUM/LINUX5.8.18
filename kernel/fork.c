@@ -874,10 +874,16 @@ static struct task_struct *dup_task_struct(struct task_struct *orig, int node)
 
 	if (node == NUMA_NO_NODE)
 		node = tsk_fork_get_node(orig);
+	/*
+	 * 分配新进程的task_struct
+	 */
 	tsk = alloc_task_struct_node(node);
 	if (!tsk)
 		return NULL;
 
+	/*
+	 * 分配新进程的stack
+	 */
 	stack = alloc_thread_stack_node(tsk, node);
 	if (!stack)
 		goto free_tsk;
@@ -887,6 +893,9 @@ static struct task_struct *dup_task_struct(struct task_struct *orig, int node)
 
 	stack_vm_area = task_stack_vm_area(tsk);
 
+	/*
+	 * cpye父进程 task_struct 的内容到子进程 task_struct
+	 */
 	err = arch_dup_task_struct(tsk, orig);
 
 	/*
@@ -919,6 +928,9 @@ static struct task_struct *dup_task_struct(struct task_struct *orig, int node)
 	tsk->seccomp.filter = NULL;
 #endif
 
+	/*
+	 * cpye父进程 stack 的内容到子进程 stack
+	 */
 	setup_thread_stack(tsk, orig);
 	clear_user_return_notifier(tsk);
 	clear_tsk_need_resched(tsk);
@@ -1872,6 +1884,10 @@ static __latent_entropy struct task_struct *copy_process(
 	u64 clone_flags = args->flags;
 	struct nsproxy *nsp = current->nsproxy;
 
+	/**********************************************************************/
+	/*
+	 * fork条件检查
+	 */
 	/*
 	 * Don't allow sharing the root directory with processes in a different
 	 * namespace
@@ -1936,6 +1952,7 @@ static __latent_entropy struct task_struct *copy_process(
 			return ERR_PTR(-EINVAL);
 	}
 
+	/**********************************************************************/
 	/*
 	 * Force any signals received before this point to be delivered
 	 * before the fork happens.  Collect up signals sent to multiple
@@ -1997,10 +2014,20 @@ static __latent_entropy struct task_struct *copy_process(
 	 * triggers too late. This doesn't hurt, the check is only there
 	 * to stop root fork bombs.
 	 */
+
+	/*
+	 * 判断是否达到最大的进程数
+	 */
 	retval = -EAGAIN;
 	if (data_race(nr_threads >= max_threads))
 		goto bad_fork_cleanup_count;
 
+	/*
+	 * per-task delay accounting
+	 *
+	 * 统计每一个task的等待系统资源的时间 CPU、memeory、IO
+	 *
+	 */
 	delayacct_tsk_init(p);	/* Must remain after dup_task_struct() */
 	p->flags &= ~(PF_SUPERPRIV | PF_WQ_WORKER | PF_IDLE);
 	p->flags |= PF_FORKNOEXEC;

@@ -3879,6 +3879,11 @@ static inline void update_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *s
 		 *
 		 * IOW we're enqueueing a task on a new CPU.
 		 */
+
+		/*
+		 * 如果是新加入的进程，则要先把进程的各个值加入到cfs_rq的avg上
+		 *
+		 */
 		attach_entity_load_avg(cfs_rq, se);
 		update_tg_load_avg(cfs_rq, 0);
 
@@ -9613,6 +9618,12 @@ static int should_we_balance(struct lb_env *env)
 		return 1;
 
 	/* Try to find first idle CPU */
+	/*
+	 * 在cpu组中查找第一个idle的cpu，如果这个cpu和dst_cpu是一个，
+	 * 那个返回true
+	 *
+	 * 原因：目前不清楚
+	 */
 	for_each_cpu_and(cpu, group_balance_mask(sg), env->cpus) {
 		if (!idle_cpu(cpu))
 			continue;
