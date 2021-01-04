@@ -418,6 +418,10 @@ static vm_fault_t __do_page_fault(struct mm_struct *mm, unsigned long addr,
 	 * Ok, we have a good vm_area for this memory access, so we can handle
 	 * it.
 	 */
+	/*
+	 * 如果下面的条件成立，说明当前访问地址不属于这个vma
+	 * 直接返回错误
+	 */
 	if (unlikely(vma->vm_start > addr)) {
 		if (!(vma->vm_flags & VM_GROWSDOWN))
 			return VM_FAULT_BADMAP;
@@ -428,6 +432,7 @@ static vm_fault_t __do_page_fault(struct mm_struct *mm, unsigned long addr,
 	/*
 	 * Check that the permissions on the VMA allow for the fault which
 	 * occurred.
+	 * 访问权限检测
 	 */
 	if (!(vma->vm_flags & vm_flags))
 		return VM_FAULT_BADACCESS;
@@ -474,6 +479,9 @@ static int __kprobes do_page_fault(unsigned long addr, unsigned int esr,
 	/*
 	 * If we're in an interrupt or have no user context, we must not take
 	 * the fault.
+	 */
+	/*
+	 * 处于原子操作上下文或者内核态直接跳到 no_context
 	 */
 	if (faulthandler_disabled() || !mm)
 		goto no_context;
@@ -545,6 +553,9 @@ retry:
 		return 0;
 	}
 
+	/*
+	 * 需要重试
+	 */
 	if (fault & VM_FAULT_RETRY) {
 		if (mm_flags & FAULT_FLAG_ALLOW_RETRY) {
 			mm_flags |= FAULT_FLAG_TRIED;
@@ -558,7 +569,8 @@ retry:
 	 */
 
 	/*
-	 * perf事件相差的处理
+	 * 缺页处理返回值处理
+	 * perf事件相关的处理
 	 *
 	 */
 	if (likely(!(fault & (VM_FAULT_ERROR | VM_FAULT_BADMAP |
@@ -641,7 +653,7 @@ retry:
 
 no_context:
 	/*
-	 * 内核态的缺页异常处理
+	 * 内核态的缺页异常处理,基本就是打印相关信息，然后crash
 	 */
 	__do_kernel_fault(addr, esr, regs);
 	return 0;

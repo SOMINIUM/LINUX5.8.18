@@ -813,10 +813,19 @@ static void __init mm_init(void)
 	init_debug_pagealloc();
 	report_meminit();
 	mem_init();
+	/*
+	 * slxb相关初始化
+	 */
 	kmem_cache_init();
+	/*
+	 * 内存泄漏检测模块初始化
+	 */
 	kmemleak_init();
 	pgtable_init();
 	debug_objects_mem_init();
+	/*
+	 * vmalloc初始化
+	 */
 	vmalloc_init();
 	ioremap_huge_init();
 	/* Should be run before the first non-init thread is created */
@@ -852,6 +861,9 @@ asmlinkage __visible void __init start_kernel(void)
 	page_address_init();
 	pr_notice("%s", linux_banner);
 	early_security_init();
+	/*
+	 * 系统核心模块的初始化，与体系架构相关性较大
+	 */
 	setup_arch(&command_line);
 	setup_boot_config(command_line);
 	setup_command_line(command_line);
@@ -886,6 +898,9 @@ asmlinkage __visible void __init start_kernel(void)
 	vfs_caches_init_early();
 	sort_main_extable();
 	trap_init();
+	/*
+	 * 体系架构无关的内存初始化
+	 */
 	mm_init();
 
 	ftrace_init();

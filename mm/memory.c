@@ -2911,7 +2911,9 @@ static vm_fault_t do_wp_page(struct vm_fault *vmf)
 		pte_unmap_unlock(vmf->pte, vmf->ptl);
 		return handle_userfault(vmf, VM_UFFD_WP);
 	}
-
+	/*
+	 * 根据地址找到对应的页面
+	 */
 	vmf->page = vm_normal_page(vma, vmf->address, vmf->orig_pte);
 	if (!vmf->page) {
 		/*
@@ -3350,7 +3352,7 @@ static vm_fault_t do_anonymous_page(struct vm_fault *vmf)
 	 * Here we only have mmap_read_lock(mm).
 	 */
 	/*
-	 * 在这里通过伙伴系统分配物理页面来映射
+	 * 分配pte页表项
 	 *
 	 */
 	if (pte_alloc(vma->vm_mm, vmf->pmd))
@@ -3391,6 +3393,10 @@ static vm_fault_t do_anonymous_page(struct vm_fault *vmf)
 	 */
 	if (unlikely(anon_vma_prepare(vma)))
 		goto oom;
+	/*
+	 * 这里为用户态程序分配的内存均为 高端内存且可移动
+	 * 方便进行内存回收等操作
+	 */
 	page = alloc_zeroed_user_highpage_movable(vma, vmf->address);
 	if (!page)
 		goto oom;
@@ -3406,6 +3412,9 @@ static vm_fault_t do_anonymous_page(struct vm_fault *vmf)
 	 */
 	__SetPageUptodate(page);
 
+	/*
+	 * 建立pte和页面的映射
+	 */
 	entry = mk_pte(page, vma->vm_page_prot);
 	entry = pte_sw_mkyoung(entry);
 	if (vma->vm_flags & VM_WRITE)
@@ -3435,6 +3444,9 @@ static vm_fault_t do_anonymous_page(struct vm_fault *vmf)
 	 *
 	 */
 	page_add_new_anon_rmap(page, vma, vmf->address, false);
+	/*
+	 * 加入lru
+	 */
 	lru_cache_add_active_or_unevictable(page, vma);
 setpte:
 	set_pte_at(vma->vm_mm, vmf->address, vmf->pte, entry);
@@ -4240,6 +4252,9 @@ static vm_fault_t handle_pte_fault(struct vm_fault *vmf)
 		 * mmap_lock read mode and khugepaged takes it in write mode.
 		 * So now it's safe to run pte_offset_map().
 		 */
+		/*
+		 * 获取pte页表项
+		 */
 		vmf->pte = pte_offset_map(vmf->pmd, vmf->address);
 		vmf->orig_pte = *vmf->pte;
 
@@ -4257,7 +4272,9 @@ static vm_fault_t handle_pte_fault(struct vm_fault *vmf)
 			vmf->pte = NULL;
 		}
 	}
-
+	/*
+	 * 如果pte为空，说明是从来没有做过映射
+	 */
 	if (!vmf->pte) {
 		if (vma_is_anonymous(vmf->vma))
 			/*
@@ -4271,10 +4288,10 @@ static vm_fault_t handle_pte_fault(struct vm_fault *vmf)
 			return do_fault(vmf);
 	}
 
+	/*
+	 * 做过映射，但页面被交换到swap分区的情况
+	 */
 	if (!pte_present(vmf->orig_pte))
-		/*
-		 * 页面被交换到swap分区的情况
-		 */
 		return do_swap_page(vmf);
 
 	if (pte_protnone(vmf->orig_pte) && vma_is_accessible(vmf->vma))
@@ -4339,11 +4356,17 @@ static vm_fault_t __handle_mm_fault(struct vm_area_struct *vma,
 	p4d_t *p4d;
 	vm_fault_t ret;
 
+	/*
+	 * 获取页面目录项
+	 */
 	pgd = pgd_offset(mm, address);
 	p4d = p4d_alloc(mm, pgd, address);
 	if (!p4d)
 		return VM_FAULT_OOM;
 
+	/*
+	 * 分配pud页表项
+	 */
 	vmf.pud = pud_alloc(mm, p4d, address);
 	if (!vmf.pud)
 		return VM_FAULT_OOM;
@@ -4371,6 +4394,9 @@ retry_pud:
 		}
 	}
 
+	/*
+	 * 分配pmd页表项
+	 */
 	vmf.pmd = pmd_alloc(mm, vmf.pud, address);
 	if (!vmf.pmd)
 		return VM_FAULT_OOM;

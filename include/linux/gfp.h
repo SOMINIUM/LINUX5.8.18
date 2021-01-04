@@ -452,6 +452,10 @@ static inline enum zone_type gfp_zone(gfp_t flags)
 
 	z = (GFP_ZONE_TABLE >> (bit * GFP_ZONES_SHIFT)) &
 					 ((1 << GFP_ZONES_SHIFT) - 1);
+    /*
+     * 这个比较好理解，就是 GFP_ZONE_BAD 的情况，GFP_ZONE_BAD 是左移，这里
+     * 再右移回来，看看是不是 1
+     */
 	VM_BUG_ON((GFP_ZONE_BAD >> bit) & 1);
 	return z;
 }

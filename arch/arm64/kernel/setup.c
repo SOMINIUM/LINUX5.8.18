@@ -329,8 +329,14 @@ void __init setup_arch(char **cmdline_p)
 	if (!efi_enabled(EFI_BOOT) && ((u64)_text % MIN_KIMG_ALIGN) != 0)
 	     pr_warn(FW_BUG "Kernel image misaligned at boot, please fix your bootloader!");
 
+	/*
+	 * memblock模块初始化
+	 */
 	arm64_memblock_init();
 
+	/*
+	 * 建立内核页表
+	 */
 	paging_init();
 
 	acpi_table_upgrade();
@@ -341,6 +347,9 @@ void __init setup_arch(char **cmdline_p)
 	if (acpi_disabled)
 		unflatten_device_tree();
 
+	/*
+	 * 构建pgdata zone page等重要结构体
+	 */
 	bootmem_init();
 
 	kasan_init();
