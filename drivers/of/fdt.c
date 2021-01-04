@@ -1023,6 +1023,9 @@ int __init early_init_dt_scan_memory(unsigned long node, const char *uname,
 		pr_debug(" - %llx ,  %llx\n", (unsigned long long)base,
 		    (unsigned long long)size);
 
+		/*
+		 * 加入到 memory_block 中
+		 */
 		early_init_dt_add_memory_arch(base, size);
 
 		if (!hotpluggable)
@@ -1045,13 +1048,22 @@ int __init early_init_dt_scan_chosen(unsigned long node, const char *uname,
 
 	pr_debug("search \"chosen\", depth: %d, uname: %s\n", depth, uname);
 
+	/*
+	 * 如果不是chosen节点，直接返回
+	 */
 	if (depth != 1 || !data ||
 	    (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0))
 		return 0;
 
+	/*
+	 * 解析initrd信息
+	 */
 	early_init_dt_check_for_initrd(node);
 
 	/* Retrieve command line */
+	/*
+	 * 解析启动参数并复制到 boot_command_line
+	 */
 	p = of_get_flat_dt_prop(node, "bootargs", &l);
 	if (p != NULL && l > 0)
 		strlcpy(data, p, min(l, COMMAND_LINE_SIZE));
@@ -1187,6 +1199,11 @@ void __init early_init_dt_scan_nodes(void)
 	int rc = 0;
 
 	/* Retrieve various information from the /chosen node */
+	/*
+	 * 对每个dt节点调用callback函数，些dt内核部分刚刚完成映射，只能笨方法
+	 * 逐个扫描,这里只处理chosen节点
+	 *
+	 */
 	rc = of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
 	if (!rc)
 		pr_warn("No chosen node found, continuing without\n");
@@ -1195,6 +1212,9 @@ void __init early_init_dt_scan_nodes(void)
 	of_scan_flat_dt(early_init_dt_scan_root, NULL);
 
 	/* Setup memory, calling early_init_dt_add_memory_arch */
+	/*
+	 * 对每个dt节点调用callback函数，这里只处理内存相关节点
+	 */
 	of_scan_flat_dt(early_init_dt_scan_memory, NULL);
 }
 

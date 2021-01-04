@@ -375,6 +375,9 @@ void __init arm64_memblock_init(void)
 		initrd_end = initrd_start + phys_initrd_size;
 	}
 
+	/*
+	 * 保留内存处理
+	 */
 	early_init_fdt_scan_reserved_mem();
 
 	if (IS_ENABLED(CONFIG_ZONE_DMA)) {
@@ -426,6 +429,9 @@ void __init bootmem_init(void)
 	memblocks_present();
 
 	sparse_init();
+	/*
+	 * 核心函数
+	 */
 	zone_sizes_init(min, max);
 
 	memblock_dump_all();

@@ -174,9 +174,14 @@ static void __init setup_machine_fdt(phys_addr_t dt_phys)
 	void *dt_virt = fixmap_remap_fdt(dt_phys, &size, PAGE_KERNEL);
 	const char *name;
 
+	/*
+	 * 处理保留内存
+	 */
 	if (dt_virt)
 		memblock_reserve(dt_phys, size);
-
+	/*
+	 * early_init_dt_scan 会扫描chosen memory结节
+	 */
 	if (!dt_virt || !early_init_dt_scan(dt_virt)) {
 		pr_crit("\n"
 			"Error: invalid device tree blob at physical address %pa (virtual address 0x%p)\n"
@@ -301,6 +306,9 @@ void __init setup_arch(char **cmdline_p)
 	early_fixmap_init();
 	early_ioremap_init();
 
+	/*
+	 * device tree早期处理
+	 */
 	setup_machine_fdt(__fdt_pointer);
 
 	/*
