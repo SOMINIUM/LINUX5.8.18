@@ -6903,6 +6903,9 @@ static void __init free_area_init_core(struct pglist_data *pgdat)
 		 * when the bootmem allocator frees pages into the buddy system.
 		 * And all highmem pages will be managed by the buddy system.
 		 */
+		/*
+		 * 设置zone
+		 */
 		zone_init_internals(zone, j, nid, freesize);
 
 		if (!size)
@@ -6910,7 +6913,13 @@ static void __init free_area_init_core(struct pglist_data *pgdat)
 
 		set_pageblock_order();
 		setup_usemap(pgdat, zone, zone_start_pfn, size);
+		/*
+		 * 初始化zone为freelist为空
+		 */
 		init_currently_empty_zone(zone, zone_start_pfn, size);
+		/*
+		 * 每个页面构建page结构体
+		 */
 		memmap_init(size, nid, j, zone_start_pfn);
 	}
 }
@@ -6992,6 +7001,12 @@ static void __init free_area_init_node(int nid)
 	pr_info("Initmem setup node %d [mem %#018Lx-%#018Lx]\n", nid,
 		(u64)start_pfn << PAGE_SHIFT,
 		end_pfn ? ((u64)end_pfn << PAGE_SHIFT) - 1 : 0);
+	/*
+	 * 功能：
+	 * 1.计算node total page
+	 * 2.设置各个zone的start_pfn , spanned_pages, present_pages, size
+	 *
+	 */
 	calculate_node_totalpages(pgdat, start_pfn, end_pfn);
 
 	alloc_node_mem_map(pgdat);
@@ -7513,6 +7528,9 @@ void __init free_area_init(unsigned long *max_zone_pfn)
 	setup_nr_node_ids();
 	init_unavailable_mem();
 	for_each_online_node(nid) {
+		/*
+		 * 初始化node
+		 */
 		pg_data_t *pgdat = NODE_DATA(nid);
 		free_area_init_node(nid);
 

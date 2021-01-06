@@ -191,9 +191,17 @@ static void __init zone_sizes_init(unsigned long min, unsigned long max)
 	unsigned long max_zone_pfns[MAX_NR_ZONES]  = {0};
 
 #ifdef CONFIG_ZONE_DMA
+	/*
+	 *  arm64_dma_phys_limit = 2147483648
+	 *  在arm平台，dma寻址范围为2G
+	 */
 	max_zone_pfns[ZONE_DMA] = PFN_DOWN(arm64_dma_phys_limit);
 #endif
 #ifdef CONFIG_ZONE_DMA32
+	/*
+	 *  arm64_dma32_phys_limit = 4294967296
+	 *  在arm平台，dma寻址范围为4G
+	 */
 	max_zone_pfns[ZONE_DMA32] = PFN_DOWN(arm64_dma32_phys_limit);
 #endif
 	max_zone_pfns[ZONE_NORMAL] = max;
@@ -524,6 +532,9 @@ void __init mem_init(void)
 	free_unused_memmap();
 #endif
 	/* this will put all unused low memory onto the freelists */
+	/*
+	 * 将页面加入到伙伴系统
+	 */
 	memblock_free_all();
 
 	mem_init_print_info(NULL);

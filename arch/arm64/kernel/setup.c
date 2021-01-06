@@ -338,7 +338,8 @@ void __init setup_arch(char **cmdline_p)
 	     pr_warn(FW_BUG "Kernel image misaligned at boot, please fix your bootloader!");
 
 	/*
-	 * memblock模块初始化
+	 * memblock 主要处理保留的内存，将保留内存且不需要映射的内存从memblock.memory
+	 * 上移除。
 	 */
 	arm64_memblock_init();
 

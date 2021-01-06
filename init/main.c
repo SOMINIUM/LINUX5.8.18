@@ -812,6 +812,9 @@ static void __init mm_init(void)
 	page_ext_init_flatmem();
 	init_debug_pagealloc();
 	report_meminit();
+	/*
+	 * 伙伴系统相关初始化
+	 */
 	mem_init();
 	/*
 	 * slxb相关初始化
@@ -871,7 +874,9 @@ asmlinkage __visible void __init start_kernel(void)
 	setup_per_cpu_areas();
 	smp_prepare_boot_cpu();	/* arch-specific boot-cpu hooks */
 	boot_cpu_hotplug_init();
-
+	/*
+	 * 伙伴系统初始化
+	 */
 	build_all_zonelists(NULL);
 	page_alloc_init();
 
