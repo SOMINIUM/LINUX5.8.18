@@ -706,6 +706,9 @@ int migrate_page(struct address_space *mapping,
 	if (rc != MIGRATEPAGE_SUCCESS)
 		return rc;
 
+	/*
+	 * copy页面数据
+	 */
 	if (mode != MIGRATE_SYNC_NO_COPY)
 		migrate_page_copy(newpage, page);
 	else
@@ -947,11 +950,16 @@ static int move_to_new_page(struct page *newpage, struct page *page,
 
 	VM_BUG_ON_PAGE(!PageLocked(page), page);
 	VM_BUG_ON_PAGE(!PageLocked(newpage), newpage);
-
+	/*
+	 * 返回页面映射类型
+	 */
 	mapping = page_mapping(page);
 
 	if (likely(is_lru)) {
 		if (!mapping)
+			/*
+			 * 	匿名页或者slab页面
+			 */
 			rc = migrate_page(mapping, newpage, page, mode);
 		else if (mapping->a_ops->migratepage)
 			/*
@@ -1023,6 +1031,9 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
 	struct anon_vma *anon_vma = NULL;
 	bool is_lru = !__PageMovable(page);
 
+	/*
+	 * 获取页面锁
+	 */
 	if (!trylock_page(page)) {
 		if (!force || mode == MIGRATE_ASYNC)
 			goto out;
@@ -1046,6 +1057,9 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
 		lock_page(page);
 	}
 
+	/*
+	 * 判断当前页面是否正在回写
+	 */
 	if (PageWriteback(page)) {
 		/*
 		 * Only in the case of a full synchronous migration is it
@@ -1126,6 +1140,9 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
 		page_was_mapped = 1;
 	}
 
+	/*
+	 * 页面数据迁移
+	 */
 	if (!page_mapped(page))
 		rc = move_to_new_page(newpage, page, mode);
 
@@ -1173,11 +1190,18 @@ static int unmap_and_move(new_page_t get_new_page,
 	int rc = MIGRATEPAGE_SUCCESS;
 	struct page *newpage = NULL;
 
+	/*
+	 * 判断系统是否支持迁移
+	 */
 	if (!thp_migration_supported() && PageTransHuge(page))
 		return -ENOMEM;
 
 	if (page_count(page) == 1) {
 		/* page was freed from under us. So we are done. */
+		/*
+		 * 如果页面引用==1,说明页面只我们在使用，也就是页面已经被它的申请者释放
+		 * 了，所以我们直接就是成功了。
+		 */
 		ClearPageActive(page);
 		ClearPageUnevictable(page);
 		if (unlikely(__PageMovable(page))) {
@@ -1193,6 +1217,9 @@ static int unmap_and_move(new_page_t get_new_page,
 	if (!newpage)
 		return -ENOMEM;
 
+	/*
+	 * 通过RMAP断开原来的映射并做把内空放到新的页面上
+	 */
 	rc = __unmap_and_move(page, newpage, force, mode);
 	if (rc == MIGRATEPAGE_SUCCESS)
 		set_page_owner_migrate_reason(newpage, reason);
@@ -1222,6 +1249,9 @@ out:
 	 * we want to retry.
 	 */
 	if (rc == MIGRATEPAGE_SUCCESS) {
+		/*
+		 * 成功，释放原来的页面
+		 */
 		put_page(page);
 		if (reason == MR_MEMORY_FAILURE) {
 			/*
@@ -1233,6 +1263,9 @@ out:
 				num_poisoned_pages_inc();
 		}
 	} else {
+		/*
+		 * 失败
+		 */
 		if (rc != -EAGAIN) {
 			if (likely(!__PageMovable(page))) {
 				putback_lru_page(page);
@@ -1248,6 +1281,9 @@ out:
 			put_page(page);
 		}
 put_new:
+		/*
+		 * 释放申请的新页面
+		 */
 		if (put_new_page)
 			put_new_page(newpage, private);
 		else
@@ -1413,6 +1449,8 @@ out:
  *
  * Returns the number of pages that were not migrated, or an error code.
  */
+
+/*页面迁移,具体看上面注释*/
 int migrate_pages(struct list_head *from, new_page_t get_new_page,
 		free_page_t put_new_page, unsigned long private,
 		enum migrate_mode mode, int reason)
@@ -1441,6 +1479,9 @@ retry:
 						put_new_page, private, page,
 						pass > 2, mode, reason);
 			else
+				/*
+				 * 页面迁移核心函数
+				 */
 				rc = unmap_and_move(get_new_page, put_new_page,
 						private, page, pass > 2, mode,
 						reason);

@@ -4278,12 +4278,12 @@ static vm_fault_t handle_pte_fault(struct vm_fault *vmf)
 	if (!vmf->pte) {
 		if (vma_is_anonymous(vmf->vma))
 			/*
-			 * 对于匿名页面
+			 * 对于当前页面是一个匿名页面
 			 */
 			return do_anonymous_page(vmf);
 		else
 			/*
-			 * 对于文件映射
+			 * 对于当前页面是一个非匿名的共享映射
 			 */
 			return do_fault(vmf);
 	}

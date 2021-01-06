@@ -680,9 +680,14 @@ struct address_space *page_mapping(struct page *page)
 	page = compound_head(page);
 
 	/* This happens if someone calls flush_dcache_page on slab page */
+	/*
+	 * 对于slab页面返回 NULL
+	 */
 	if (unlikely(PageSlab(page)))
 		return NULL;
-
+	/*
+	 * 如果是PageSwapCacher返回swap_address_space
+	 */
 	if (unlikely(PageSwapCache(page))) {
 		swp_entry_t entry;
 
@@ -690,6 +695,9 @@ struct address_space *page_mapping(struct page *page)
 		return swap_address_space(entry);
 	}
 
+	/*
+	 * 对于匿名页面返回 NULL
+	 */
 	mapping = page->mapping;
 	if ((unsigned long)mapping & PAGE_MAPPING_ANON)
 		return NULL;
