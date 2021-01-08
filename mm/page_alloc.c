@@ -4317,7 +4317,10 @@ static void wake_all_kswapds(unsigned int order, gfp_t gfp_mask,
 	struct zone *zone;
 	pg_data_t *last_pgdat = NULL;
 	enum zone_type highest_zoneidx = ac->highest_zoneidx;
-
+	/*
+	 *  内存回收是针对内存节点node
+	 *  在numa中第一个node都有一个kswapd
+	 */
 	for_each_zone_zonelist_nodemask(zone, z, ac->zonelist, highest_zoneidx,
 					ac->nodemask) {
 		if (last_pgdat != zone->zone_pgdat)
@@ -4624,7 +4627,7 @@ retry_cpuset:
 			   (order > 0 && ac->migratetype != MIGRATE_MOVABLE))
 			&& !gfp_pfmemalloc_allowed(gfp_mask)) {
 		/*
-		 * 到这里，如果还是没有分配分配到内存页面就启动页面合并来分配。
+		 * 到这里，如果还是没有分配分配到内存页面就启动内存规整来分配。
 		 * 主要就是将一些小的页面合并成大的页面块来分配。
 		 *
 		 * */

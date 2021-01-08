@@ -2633,6 +2633,9 @@ static void kcompactd_do_work(pg_data_t *pgdat)
 		pgdat->kcompactd_highest_zoneidx = pgdat->nr_zones - 1;
 }
 
+/*
+ * 唤醒内存规整
+ */
 void wakeup_kcompactd(pg_data_t *pgdat, int order, int highest_zoneidx)
 {
 	if (!order)

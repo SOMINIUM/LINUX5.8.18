@@ -2189,6 +2189,10 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
 {
 	if (is_active_lru(lru)) {
 		if (sc->may_deactivate & (1 << is_file_lru(lru)))
+			/*
+			 * 这里目前理解是当不活跃的LRU页面数量少于活跃的页面数量
+			 * 就是看看活跃的LRU是不是有页面可以放入不活跃的LRU中
+			 */
 			shrink_active_list(nr_to_scan, lruvec, sc, lru);
 		else
 			sc->skipped_deactivate = 1;
@@ -3632,6 +3636,13 @@ static int balance_pgdat(pg_data_t *pgdat, int order, int highest_zoneidx)
 	boosted = nr_boost_reclaim;
 
 restart:
+	/*
+	 * DEF_PRIORITY = 12
+	 * 这里 sc.priority 表示扫描 lru 表的长度 右移值
+	 * 计算公式 lru总升序 >> sc.priority
+	 * 这个值会依次减小，那个扫描的粒度会逐步增加
+	 *
+	 */
 	sc.priority = DEF_PRIORITY;
 	do {
 		unsigned long nr_reclaimed = sc.nr_reclaimed;
@@ -3976,9 +3987,15 @@ kswapd_try_sleep:
 					highest_zoneidx);
 
 		/* Read the new order and highest_zoneidx */
+		/*
+		 * 在休眠过程中设置过新的参数，唤醒之后会要读出
+		 */
 		alloc_order = reclaim_order = READ_ONCE(pgdat->kswapd_order);
 		highest_zoneidx = kswapd_highest_zoneidx(pgdat,
 							highest_zoneidx);
+		/*
+		 * 清除参数
+		 */
 		WRITE_ONCE(pgdat->kswapd_order, 0);
 		WRITE_ONCE(pgdat->kswapd_highest_zoneidx, MAX_NR_ZONES);
 
@@ -4003,6 +4020,9 @@ kswapd_try_sleep:
 		 * for the order it finished reclaiming at (reclaim_order)
 		 * but kcompactd is woken to compact for the original
 		 * request (alloc_order).
+		 */
+		/*
+		 * trace事件
 		 */
 		trace_mm_vmscan_kswapd_wake(pgdat->node_id, highest_zoneidx,
 						alloc_order);
