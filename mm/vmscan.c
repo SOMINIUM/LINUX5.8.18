@@ -2267,6 +2267,11 @@ enum scan_balance {
  * nr[0] = anon inactive pages to scan; nr[1] = anon active pages to scan
  * nr[2] = file inactive pages to scan; nr[3] = file active pages to scan
  */
+/*
+ * swappiness 表示使用swap分区的积极程序，如果是0表示最大程序使用内存
+ * 如果是100表示最大程序使用swap空间，默认是60
+ *
+ */
 static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
 			   unsigned long *nr)
 {
@@ -2280,6 +2285,9 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
 	enum lru_list lru;
 
 	/* If we have no swap space, do not bother scanning anon pages. */
+	/*
+	 * 没有swap空间，则不需要扫描匿名页面
+	 */
 	if (!sc->may_swap || mem_cgroup_get_nr_swap_pages(memcg) <= 0) {
 		scan_balance = SCAN_FILE;
 		goto out;
@@ -2291,6 +2299,10 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
 	 * disable swapping for individual groups completely when
 	 * using the memory controller's swap limit feature would be
 	 * too expensive.
+	 */
+	/*
+	 * 这里 swappiness = 0,也就是尽量使用内存
+	 * 并且不是全局回收，则只处理file映射页面
 	 */
 	if (cgroup_reclaim(sc) && !swappiness) {
 		scan_balance = SCAN_FILE;
@@ -2324,6 +2336,9 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
 		goto out;
 	}
 
+	/*
+	 * 将比例计算扫描匿名和文件各扫描多少页面
+	 */
 	scan_balance = SCAN_FRACT;
 	/*
 	 * Calculate the pressure balance between anon and file pages.
@@ -2340,14 +2355,32 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
 	 *
 	 * With swappiness at 100, anon and file have equal IO cost.
 	 */
+	/*
+	 * 下面这两行，就是当 swappiness = 100,最大程序使用swap空间，这时
+	 * 匿名和文件拥有相同的优先级，只要当swappiness < 100,那么匿名的优先
+	 * 级就比较高
+	 */
+	/*
+	 * 获取总数
+	 */
 	total_cost = sc->anon_cost + sc->file_cost;
 	anon_cost = total_cost + sc->anon_cost;
 	file_cost = total_cost + sc->file_cost;
 	total_cost = anon_cost + file_cost;
 
+	/*
+	 *         			reclaim_stat->recent_scanned[0] + 1
+	 * ap = anon_prio * -----------------------------------
+	 * 					reclaim_stat->recent_rotated[0] + 1
+	 */
 	ap = swappiness * (total_cost + 1);
 	ap /= anon_cost + 1;
 
+	/*
+	 *         			reclaim_stat->recent_scanned[1] + 1
+	 * fp = file_prio * -----------------------------------
+	 * 					reclaim_stat->recent_rotated[1] + 1
+	 */
 	fp = (200 - swappiness) * (total_cost + 1);
 	fp /= file_cost + 1;
 
@@ -2697,7 +2730,7 @@ static void shrink_node_memcgs(pg_data_t *pgdat, struct scan_control *sc)
 		 */
 		shrink_lruvec(lruvec, sc);
 		/*
-		 * 磁盘高速缓存进行回收(不要被名子迷惑)
+		 * 磁盘高速缓存进行回收(不要被名子迷惑) ???????????
 		 */
 		shrink_slab(sc->gfp_mask, pgdat->node_id, memcg,
 			    sc->priority);
@@ -3699,7 +3732,7 @@ restart:
 		 */
 		/*
 		 * 如果没有回收促进 nr_boost_reclaim 而且前也可以满足分配需求
-		 * 则不进行内存回收
+		 * 则不进行内存回收,直接退出
 		 */
 		if (!nr_boost_reclaim && balanced)
 			goto out;
@@ -3732,6 +3765,9 @@ restart:
 		 * If we're getting trouble reclaiming, start doing writepage
 		 * even in laptop mode.
 		 */
+		/*
+		 * 在无法回收的时候会启动脏页回写
+		 */
 		if (sc.priority < DEF_PRIORITY - 2)
 			sc.may_writepage = 1;
 
@@ -3758,6 +3794,9 @@ restart:
 		 * to be throttled on pfmemalloc_wait as they should not be
 		 * able to safely make forward progress. Wake them
 		 */
+		/*
+		 * 唤醒等待分配内存的进程
+		 */
 		if (waitqueue_active(&pgdat->pfmemalloc_wait) &&
 				allow_direct_reclaim(pgdat))
 			wake_up_all(&pgdat->pfmemalloc_wait);
@@ -3766,6 +3805,9 @@ restart:
 		__fs_reclaim_release();
 		ret = try_to_freeze();
 		__fs_reclaim_acquire();
+		/*
+		 * 检测退出
+		 */
 		if (ret || kthread_should_stop())
 			break;
 

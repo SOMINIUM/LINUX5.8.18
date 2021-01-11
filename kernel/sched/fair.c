@@ -8217,9 +8217,15 @@ static unsigned long scale_rt_capacity(struct sched_domain *sd, int cpu)
 
 static void update_cpu_capacity(struct sched_domain *sd, int cpu)
 {
+	/*
+	 * 这个 capacity 就是 总的算力去掉 实时进程 irq所消耗的算力
+	 */
 	unsigned long capacity = scale_rt_capacity(sd, cpu);
 	struct sched_group *sdg = sd->groups;
 
+	/*
+	 * 一个cpu的算力是变化的
+	 */
 	cpu_rq(cpu)->cpu_capacity_orig = arch_scale_cpu_capacity(cpu);
 
 	if (!capacity)

@@ -4707,6 +4707,9 @@ retry:
 		goto nopage;
 
 	/* Try direct reclaim and then allocating */
+	/*
+	 * 启动直接内存回收去分配内存(同步的)
+	 */
 	page = __alloc_pages_direct_reclaim(gfp_mask, order, alloc_flags, ac,
 							&did_some_progress);
 	if (page)

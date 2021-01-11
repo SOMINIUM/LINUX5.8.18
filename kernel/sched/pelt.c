@@ -93,6 +93,9 @@ static u32 __accumulate_pelt_segments(u64 periods, u32 d1, u32 d3)
 	 *            n=1
 	 *
 	 * 这里我们加上一个中间推导过程
+     *               inf               inf        p-1
+     *   max = 1024 \Sum y^n = 1024 ( \Sum y^n + \Sum y^n + y^0 )
+     *               n=0               n=p        n=1
 	 *
 	 *     inf              inf            inf
 	 *  (\Sum y^n) y^p = \Sum y^(n+p) = \Sum y^n
