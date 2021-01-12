@@ -1985,7 +1985,9 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
 
 	if (nr_taken == 0)
 		return 0;
-
+	/*
+	 * 扫描 page_list 回收页面，返回回收的页面数量
+	 */
 	nr_reclaimed = shrink_page_list(&page_list, pgdat, sc, 0,
 				&stat, false);
 
@@ -2055,6 +2057,9 @@ static void shrink_active_list(unsigned long nr_to_scan,
 
 	spin_lock_irq(&pgdat->lru_lock);
 
+	/*
+	 * 批量的从 LRU 中分离 nr_to_scan 个页面到 l_hold
+	 */
 	nr_taken = isolate_lru_pages(nr_to_scan, lruvec, &l_hold,
 				     &nr_scanned, sc, lru);
 
@@ -2064,7 +2069,9 @@ static void shrink_active_list(unsigned long nr_to_scan,
 	__count_memcg_events(lruvec_memcg(lruvec), PGREFILL, nr_scanned);
 
 	spin_unlock_irq(&pgdat->lru_lock);
-
+	/*
+	 * 逐个分析 l_hold 中的页面，并加入到相应的链表中
+	 */
 	while (!list_empty(&l_hold)) {
 		cond_resched();
 		page = lru_to_page(&l_hold);
@@ -2110,7 +2117,9 @@ static void shrink_active_list(unsigned long nr_to_scan,
 	 * Move pages back to the lru list.
 	 */
 	spin_lock_irq(&pgdat->lru_lock);
-
+	/*
+	 * 把页面迁移回相应的链表中
+	 */
 	nr_activate = move_pages_to_lru(lruvec, &l_active);
 	nr_deactivate = move_pages_to_lru(lruvec, &l_inactive);
 	/* Keep all free pages in l_active list */
@@ -2123,6 +2132,9 @@ static void shrink_active_list(unsigned long nr_to_scan,
 	spin_unlock_irq(&pgdat->lru_lock);
 
 	mem_cgroup_uncharge_list(&l_active);
+	/*
+	 * 释放没有引用的页面
+	 */
 	free_unref_page_list(&l_active);
 	trace_mm_vmscan_lru_shrink_active(pgdat->node_id, nr_taken, nr_activate,
 			nr_deactivate, nr_rotated, sc->priority, file);
@@ -2497,7 +2509,9 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
 	struct blk_plug plug;
 	bool scan_adjusted;
-
+	/*
+	 * 设置扫描的页面数，重要
+	 */
 	get_scan_count(lruvec, sc, nr);
 
 	/* Record the original scan target for proportional adjustments later */
@@ -2518,6 +2532,11 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
 			 sc->priority == DEF_PRIORITY);
 
 	blk_start_plug(&plug);
+	/*
+	 * 这里不需要看  nr[LRU_ACTIVE_ANON] 原因是活跃的匿名页面不能被回收
+	 * 根据程序的局部性原理，这些页面很有可能马上被访问到，只有加入到不
+	 * 活跃的页面时才会被回收
+	 */
 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
 					nr[LRU_INACTIVE_FILE]) {
 		unsigned long nr_anon, nr_file, percentage;

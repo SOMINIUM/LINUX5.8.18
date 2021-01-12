@@ -268,11 +268,11 @@ struct lruvec {
 #endif
 };
 
-/* Isolate unmapped pages */
+/* Isolate unmapped pages 分离没有映射的页面 */
 #define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x2)
-/* Isolate for asynchronous migration */
+/* Isolate for asynchronous migration 分离异步合并的页面 */
 #define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x4)
-/* Isolate unevictable pages */
+/* Isolate unevictable pages 分离不可合并的页面 */
 #define ISOLATE_UNEVICTABLE	((__force isolate_mode_t)0x8)
 
 /* LRU Isolation modes. */
