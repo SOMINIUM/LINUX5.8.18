@@ -198,8 +198,13 @@ struct css_set {
 	 * immutable after creation apart from the init_css_set during
 	 * subsystem registration (at boot time).
 	 */
+    /*
+     * 是一个指针数组，存储一组指向cgroup_subsys_state的指针
+     */
 	struct cgroup_subsys_state *subsys[CGROUP_SUBSYS_COUNT];
-
+    /*
+     * 引用计数，一个css_set可以被多个进程共用
+     */
 	/* reference count */
 	refcount_t refcount;
 
@@ -224,6 +229,10 @@ struct css_set {
 	 * css_set_rwsem, but, during migration, once tasks are moved to
 	 * mg_tasks, it can be read safely while holding cgroup_mutex.
 	 */
+
+    /*
+     * 所有引用此css_set的进程连接成链表
+     */
 	struct list_head tasks;
 	struct list_head mg_tasks;
 	struct list_head dying_tasks;
@@ -248,12 +257,18 @@ struct css_set {
 	 * List running through all cgroup groups in the same hash
 	 * slot. Protected by css_set_lock
 	 */
+    /* hlist是嵌入的hlist_node，用于把所有的css_set组成一个hash表
+     *
+     */
 	struct hlist_node hlist;
 
 	/*
 	 * List of cgrp_cset_links pointing at cgroups referenced from this
 	 * css_set.  Protected by css_set_lock.
 	 */
+    /*
+     * 指向一个由struct cgrp_links组成的链表
+     */
 	struct list_head cgrp_links;
 
 	/*
