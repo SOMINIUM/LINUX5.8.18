@@ -3772,6 +3772,9 @@ static void __init init_mount_tree(void)
 	struct mnt_namespace *ns;
 	struct path root;
 
+	/*
+	 * 挂载根目录
+	 */
 	mnt = vfs_kern_mount(&rootfs_fs_type, 0, "rootfs", NULL);
 	if (IS_ERR(mnt))
 		panic("Can't create rootfs");
@@ -3790,7 +3793,9 @@ static void __init init_mount_tree(void)
 	root.mnt = mnt;
 	root.dentry = mnt->mnt_root;
 	mnt->mnt_flags |= MNT_LOCKED;
-
+	/*
+	 * 设置当前进程 也就是0号进程的工作目录和根目录
+	 */
 	set_fs_pwd(current->fs, &root);
 	set_fs_root(current->fs, &root);
 }
@@ -3815,9 +3820,9 @@ void __init mnt_init(void)
 
 	if (!mount_hashtable || !mountpoint_hashtable)
 		panic("Failed to allocate mount hash table\n");
-
+	/*kernfs初始化，用于分配slxb内存块*/
 	kernfs_init();
-
+	/*sysfs文件系统初始化*/
 	err = sysfs_init();
 	if (err)
 		printk(KERN_WARNING "%s: sysfs_init error: %d\n",
@@ -3825,8 +3830,11 @@ void __init mnt_init(void)
 	fs_kobj = kobject_create_and_add("fs", NULL);
 	if (!fs_kobj)
 		printk(KERN_WARNING "%s: kobj create error\n", __func__);
+	/*shmem文件系统初始化*/
 	shmem_init();
+	/*rootfs文件系统初始化主要是is_tmpfs值设置 */
 	init_rootfs();
+	/*初始化挂载目录树，主要是根目录的处理*/
 	init_mount_tree();
 }
 

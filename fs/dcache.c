@@ -3224,14 +3224,30 @@ void __init vfs_caches_init_early(void)
 
 void __init vfs_caches_init(void)
 {
+	/*
+	 * slxb创建
+	 */
 	names_cachep = kmem_cache_create_usercopy("names_cache", PATH_MAX, 0,
 			SLAB_HWCACHE_ALIGN|SLAB_PANIC, 0, PATH_MAX, NULL);
 
+	/***************************************
+	 * 下面3个就来进行一些内存空间的分配
+	 */
 	dcache_init();
 	inode_init();
 	files_init();
 	files_maxfiles_init();
+	/***************************************/
+	/*
+	 * 挂载初始化
+	 */
 	mnt_init();
+	/*
+	 * 块设备初始化
+	 */
 	bdev_cache_init();
+	/*
+	 * 字符设备初始化
+	 */
 	chrdev_init();
 }

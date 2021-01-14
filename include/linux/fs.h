@@ -644,9 +644,12 @@ struct fsnotify_mark_connector;
  * of the 'struct inode'
  */
 struct inode {
+    /*访问权限控制*/
 	umode_t			i_mode;
 	unsigned short		i_opflags;
+    /*使用者的id*/
 	kuid_t			i_uid;
+    /*使用者的组id*/
 	kgid_t			i_gid;
 	unsigned int		i_flags;
 
@@ -654,9 +657,11 @@ struct inode {
 	struct posix_acl	*i_acl;
 	struct posix_acl	*i_default_acl;
 #endif
-
+    /*索引节点操作*/
 	const struct inode_operations	*i_op;
+    /*所属超级块*/
 	struct super_block	*i_sb;
+    /*地址映射*/
 	struct address_space	*i_mapping;
 
 #ifdef CONFIG_SECURITY
@@ -664,6 +669,7 @@ struct inode {
 #endif
 
 	/* Stat data, not accessed from path walking */
+    /*节点号*/
 	unsigned long		i_ino;
 	/*
 	 * Filesystems may only read i_nlink directly.  They shall use the
@@ -676,15 +682,24 @@ struct inode {
 		const unsigned int i_nlink;
 		unsigned int __i_nlink;
 	};
+    /*实际设备标志符*/
 	dev_t			i_rdev;
+
+    /*文件大小*/
 	loff_t			i_size;
+    /*文件最后访问时间*/
 	struct timespec64	i_atime;
+    /*文件最后修改时间*/
 	struct timespec64	i_mtime;
+    /*文件最扣改变时间*/
 	struct timespec64	i_ctime;
 	spinlock_t		i_lock;	/* i_blocks, i_bytes, maybe i_size */
+    /*使用的字节数*/
 	unsigned short          i_bytes;
 	u8			i_blkbits;
 	u8			i_write_hint;
+
+    /*文件的块数*/
 	blkcnt_t		i_blocks;
 
 #ifdef __NEED_I_SIZE_ORDERED
@@ -956,8 +971,11 @@ struct file {
 		struct llist_node	fu_llist;
 		struct rcu_head 	fu_rcuhead;
 	} f_u;
+    /*文件路径*/
 	struct path		f_path;
+    /*文件inode节点*/
 	struct inode		*f_inode;	/* cached value */
+    /*文件操作函数*/
 	const struct file_operations	*f_op;
 
 	/*
@@ -966,10 +984,13 @@ struct file {
 	 */
 	spinlock_t		f_lock;
 	enum rw_hint		f_write_hint;
+    /*引用计数*/
 	atomic_long_t		f_count;
 	unsigned int 		f_flags;
+    /*访问模式*/
 	fmode_t			f_mode;
 	struct mutex		f_pos_lock;
+    /*文件当前位移*/
 	loff_t			f_pos;
 	struct fown_struct	f_owner;
 	const struct cred	*f_cred;
@@ -987,6 +1008,7 @@ struct file {
 	struct list_head	f_ep_links;
 	struct list_head	f_tfile_llink;
 #endif /* #ifdef CONFIG_EPOLL */
+    /*页缓存映射*/
 	struct address_space	*f_mapping;
 	errseq_t		f_wb_err;
 	errseq_t		f_sb_err; /* for syncfs */
@@ -1445,23 +1467,78 @@ struct sb_writers {
 };
 
 struct super_block {
+    /*
+     * 用于挂入全局 super_block
+     */
 	struct list_head	s_list;		/* Keep this first */
+    /*
+     * 设备标识符
+     */
 	dev_t			s_dev;		/* search index; _not_ kdev_t */
+    /*
+     * 块大小（单位位）
+     */
 	unsigned char		s_blocksize_bits;
+    /*
+     * 块大小（单位字节）
+     */
 	unsigned long		s_blocksize;
+    /*
+     * 最大文件上限
+     */
 	loff_t			s_maxbytes;	/* Max file size */
+    /*
+     * 文件系统类型
+     */
 	struct file_system_type	*s_type;
+    /*
+     * 超级块方法
+     */
 	const struct super_operations	*s_op;
+    /*
+     * 磁盘限额方法
+     */
 	const struct dquot_operations	*dq_op;
+
+    /*
+     * 限额控制方法
+     */
 	const struct quotactl_ops	*s_qcop;
+    /*
+     * 导出方法
+     */
 	const struct export_operations *s_export_op;
+    /*
+     * 登录标志
+     */
 	unsigned long		s_flags;
+    /*
+     *
+     */
 	unsigned long		s_iflags;	/* internal SB_I_* flags */
+    /*
+     * 文件系统的魔数
+     */
 	unsigned long		s_magic;
+    /*
+     * 目录登录点
+     */
 	struct dentry		*s_root;
+    /*
+     * 卸载信号量
+     */
 	struct rw_semaphore	s_umount;
+    /*
+     * 超级块引用计数
+     */
 	int			s_count;
+    /*
+     * 活动引用计数
+     */
 	atomic_t		s_active;
+    /*
+     * 安全模块
+     */
 #ifdef CONFIG_SECURITY
 	void                    *s_security;
 #endif
@@ -1475,9 +1552,15 @@ struct super_block {
 #endif
 	struct hlist_bl_head	s_roots;	/* alternate root dentries for NFS */
 	struct list_head	s_mounts;	/* list of mounts; _not_ for fs use */
+    /*
+     * 相关的块设备
+     */
 	struct block_device	*s_bdev;
 	struct backing_dev_info *s_bdi;
 	struct mtd_info		*s_mtd;
+    /*
+     * 该类型文件系统
+     */
 	struct hlist_node	s_instances;
 	unsigned int		s_quota_types;	/* Bitmask of supported quota types */
 	struct quota_info	s_dquot;	/* Diskquota specific options */
@@ -1489,9 +1572,15 @@ struct super_block {
 	 * s_fsnotify_marks together for cache efficiency. They are frequently
 	 * accessed and rarely modified.
 	 */
+    /*
+     * 文件系统特殊信息
+     */
 	void			*s_fs_info;	/* Filesystem private info */
 
 	/* Granularity of c/m/atime in ns (cannot be worse than a second) */
+    /*
+     * 时间戳的粒度
+     */
 	u32			s_time_gran;
 	/* Time limits for c/m/atime in seconds */
 	time64_t		   s_time_min;
@@ -1877,6 +1966,7 @@ struct file_operations {
 } __randomize_layout;
 
 struct inode_operations {
+    /*节点搜索*/
 	struct dentry * (*lookup) (struct inode *,struct dentry *, unsigned int);
 	const char * (*get_link) (struct dentry *, struct inode *, struct delayed_call *);
 	int (*permission) (struct inode *, int);
@@ -1885,12 +1975,19 @@ struct inode_operations {
 	int (*readlink) (struct dentry *, char __user *,int);
 
 	int (*create) (struct inode *,struct dentry *, umode_t, bool);
+    /*创建硬连接*/
 	int (*link) (struct dentry *,struct inode *,struct dentry *);
+    /*解除硬连接*/
 	int (*unlink) (struct inode *,struct dentry *);
+    /*创建符号连接*/
 	int (*symlink) (struct inode *,struct dentry *,const char *);
+    /*创建目录*/
 	int (*mkdir) (struct inode *,struct dentry *,umode_t);
+    /*删除目录*/
 	int (*rmdir) (struct inode *,struct dentry *);
+    /*创建特殊文件(设备文件、命名管道或套接字)*/
 	int (*mknod) (struct inode *,struct dentry *,umode_t,dev_t);
+    /*重命名*/
 	int (*rename) (struct inode *, struct dentry *,
 			struct inode *, struct dentry *, unsigned int);
 	int (*setattr) (struct dentry *, struct iattr *);
@@ -1955,36 +2052,62 @@ extern loff_t vfs_dedupe_file_range_one(struct file *src_file, loff_t src_pos,
 
 
 struct super_operations {
+    /*创建并初始化一个新的索引节点对象,用于创建目录或者文件*/
    	struct inode *(*alloc_inode)(struct super_block *sb);
+    /*释放给定的索引节点*/
 	void (*destroy_inode)(struct inode *);
+    /*从磁盘上读取索引节点*/
 	void (*free_inode)(struct inode *);
 
+    /*VFS在索引节点脏时,会调用此函数*/
    	void (*dirty_inode) (struct inode *, int flags);
+    /*将给定的索引节点写入磁盘*/
 	int (*write_inode) (struct inode *, struct writeback_control *wbc);
+    /*该函数用户从磁盘上删除给定的索引节点*/
 	int (*drop_inode) (struct inode *);
+    /**/
 	void (*evict_inode) (struct inode *);
+    /**/
 	void (*put_super) (struct super_block *);
+    /**/
 	int (*sync_fs)(struct super_block *sb, int wait);
+    /**/
 	int (*freeze_super) (struct super_block *);
+    /**/
 	int (*freeze_fs) (struct super_block *);
+    /**/
 	int (*thaw_super) (struct super_block *);
+    /**/
 	int (*unfreeze_fs) (struct super_block *);
+    /**/
 	int (*statfs) (struct dentry *, struct kstatfs *);
+    /**/
 	int (*remount_fs) (struct super_block *, int *, char *);
+    /**/
 	void (*umount_begin) (struct super_block *);
 
+    /**/
 	int (*show_options)(struct seq_file *, struct dentry *);
+    /**/
 	int (*show_devname)(struct seq_file *, struct dentry *);
+    /**/
 	int (*show_path)(struct seq_file *, struct dentry *);
+    /**/
 	int (*show_stats)(struct seq_file *, struct dentry *);
 #ifdef CONFIG_QUOTA
+    /**/
 	ssize_t (*quota_read)(struct super_block *, int, char *, size_t, loff_t);
+    /**/
 	ssize_t (*quota_write)(struct super_block *, int, const char *, size_t, loff_t);
+    /**/
 	struct dquot **(*get_dquots)(struct inode *);
 #endif
+    /**/
 	int (*bdev_try_to_free_page)(struct super_block*, struct page*, gfp_t);
+    /**/
 	long (*nr_cached_objects)(struct super_block *,
 				  struct shrink_control *);
+    /**/
 	long (*free_cached_objects)(struct super_block *,
 				    struct shrink_control *);
 };
@@ -2249,6 +2372,7 @@ int sync_inode(struct inode *inode, struct writeback_control *wbc);
 int sync_inode_metadata(struct inode *inode, int wait);
 
 struct file_system_type {
+    /*名子*/
 	const char *name;
 	int fs_flags;
 #define FS_REQUIRES_DEV		1 
@@ -2259,10 +2383,14 @@ struct file_system_type {
 #define FS_RENAME_DOES_D_MOVE	32768	/* FS will handle d_move() during rename() internally. */
 	int (*init_fs_context)(struct fs_context *);
 	const struct fs_parameter_spec *parameters;
+    /*挂载调用*/
 	struct dentry *(*mount) (struct file_system_type *, int,
 		       const char *, void *);
 	void (*kill_sb) (struct super_block *);
 	struct module *owner;
+    /*
+     * 指向下一下
+     */
 	struct file_system_type * next;
 	struct hlist_head fs_supers;
 

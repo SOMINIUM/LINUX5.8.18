@@ -91,24 +91,32 @@ struct dentry {
 	unsigned int d_flags;		/* protected by d_lock */
 	seqcount_t d_seq;		/* per dentry seqlock */
 	struct hlist_bl_node d_hash;	/* lookup hash list */
+    /*父目录*/
 	struct dentry *d_parent;	/* parent directory */
 	struct qstr d_name;
+    /*相关的inode节点*/
 	struct inode *d_inode;		/* Where the name belongs to - NULL is
 					 * negative */
+    /*目录名称*/
 	unsigned char d_iname[DNAME_INLINE_LEN];	/* small names */
 
 	/* Ref lookup also touches following */
 	struct lockref d_lockref;	/* per-dentry lock and refcount */
+    /*目录操作函数*/
 	const struct dentry_operations *d_op;
+    /*文件的超级块*/
 	struct super_block *d_sb;	/* The root of the dentry tree */
 	unsigned long d_time;		/* used by d_revalidate */
+    /*文件特殊数据*/
 	void *d_fsdata;			/* fs-specific data */
 
 	union {
 		struct list_head d_lru;		/* LRU list */
 		wait_queue_head_t *d_wait;	/* in-lookup ones only */
 	};
+    /*目录中的对象*/
 	struct list_head d_child;	/* child of parent list */
+    /*子目录*/
 	struct list_head d_subdirs;	/* our children */
 	/*
 	 * d_alias and d_rcu can share memory
@@ -133,15 +141,22 @@ enum dentry_d_lock_class
 };
 
 struct dentry_operations {
+    /*判断目录对象是否有效*/
 	int (*d_revalidate)(struct dentry *, unsigned int);
+    /**/
 	int (*d_weak_revalidate)(struct dentry *, unsigned int);
+    /*为目录项生成散列值,当目录项要加入散列表中时,VFS调用该函数*/
 	int (*d_hash)(const struct dentry *, struct qstr *);
+    /*文件名比较*/
 	int (*d_compare)(const struct dentry *,
 			unsigned int, const char *, const struct qstr *);
+    /*删除*/
 	int (*d_delete)(const struct dentry *);
 	int (*d_init)(struct dentry *);
+    /*释放*/
 	void (*d_release)(struct dentry *);
 	void (*d_prune)(struct dentry *);
+    /*丢失了相关索引节点时,VFS调用该函数*/
 	void (*d_iput)(struct dentry *, struct inode *);
 	char *(*d_dname)(struct dentry *, char *, int);
 	struct vfsmount *(*d_automount)(struct path *);

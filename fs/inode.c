@@ -57,6 +57,9 @@
 
 static unsigned int i_hash_mask __read_mostly;
 static unsigned int i_hash_shift __read_mostly;
+/*
+ * 全局的hash表
+ */
 static struct hlist_head *inode_hashtable __read_mostly;
 static __cacheline_aligned_in_smp DEFINE_SPINLOCK(inode_hash_lock);
 
@@ -2084,6 +2087,9 @@ void __init inode_init_early(void)
 void __init inode_init(void)
 {
 	/* inode slab cache */
+	/*
+	 * 创建slxb
+	 */
 	inode_cachep = kmem_cache_create("inode_cache",
 					 sizeof(struct inode),
 					 0,

@@ -671,6 +671,9 @@ noinline void __ref rest_init(void)
 	 * the init task will end up wanting to create kthreads, which, if
 	 * we schedule it before we create kthreadd, will OOPS.
 	 */
+	/*
+	 * 启动kernel_init进程,加载文件系统，驱动之类的 1号进程
+	 */
 	pid = kernel_thread(kernel_init, NULL, CLONE_FS);
 	/*
 	 * Pin init on the boot CPU. Task migration is not properly working
@@ -683,6 +686,9 @@ noinline void __ref rest_init(void)
 	rcu_read_unlock();
 
 	numa_default_policy();
+	/*
+	 * 启动kthread进程, 用于管理其它的内核线程 2号进程
+	 */
 	pid = kernel_thread(kthreadd, NULL, CLONE_FS | CLONE_FILES);
 	rcu_read_lock();
 	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
@@ -900,6 +906,9 @@ asmlinkage __visible void __init start_kernel(void)
 	 * kmem_cache_init()
 	 */
 	setup_log_buf(0);
+	/*
+	 * vfs初始化 1
+	 */
 	vfs_caches_init_early();
 	sort_main_extable();
 	trap_init();
@@ -1043,6 +1052,9 @@ asmlinkage __visible void __init start_kernel(void)
 	key_init();
 	security_init();
 	dbg_late_init();
+	/*
+	 * vfs初始化 2
+	 */
 	vfs_caches_init();
 	pagecache_init();
 	signals_init();
@@ -1063,6 +1075,9 @@ asmlinkage __visible void __init start_kernel(void)
 	kcsan_init();
 
 	/* Do the rest non-__init'ed, we're now alive */
+	/*
+	 * 低版本中，这里叫rest_init
+	 */
 	arch_call_rest_init();
 
 	prevent_tail_call_optimization();
@@ -1514,6 +1529,9 @@ static noinline void __init kernel_init_freeable(void)
 	 */
 	smp_prepare_cpus(setup_max_cpus);
 
+	/*
+	 * workqueue 初始化
+	 */
 	workqueue_init();
 
 	init_mm_internals();

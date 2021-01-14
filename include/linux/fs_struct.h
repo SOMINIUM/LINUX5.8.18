@@ -12,6 +12,9 @@ struct fs_struct {
 	seqcount_t seq;
 	int umask;
 	int in_exec;
+    /*
+     * 当前进程的工作目录和根目录
+     */
 	struct path root, pwd;
 } __randomize_layout;
 
