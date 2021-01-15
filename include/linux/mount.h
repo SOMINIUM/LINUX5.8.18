@@ -67,6 +67,7 @@ struct fs_context;
 #define MNT_UMOUNT		0x8000000
 #define MNT_CURSOR		0x10000000
 
+/*结构体用来代表文件系统的实例*/
 struct vfsmount {
     /*挂载目录树的根*/
 	struct dentry *mnt_root;	/* root of the mounted tree */

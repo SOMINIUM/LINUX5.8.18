@@ -221,6 +221,10 @@ EXPORT_SYMBOL(generic_parse_monolithic);
  * another superblock (referred to by @reference) is supplied, may have
  * parameters such as namespaces copied across from that superblock.
  */
+/*
+ * 分配并初始化 fs_context
+ *
+ */
 static struct fs_context *alloc_fs_context(struct file_system_type *fs_type,
 				      struct dentry *reference,
 				      unsigned int sb_flags,
@@ -263,7 +267,10 @@ static struct fs_context *alloc_fs_context(struct file_system_type *fs_type,
 	init_fs_context = fc->fs_type->init_fs_context;
 	if (!init_fs_context)
 		init_fs_context = legacy_init_fs_context;
-
+	/*
+	 * 调用文件类型的 init_fs_context
+	 * 这个函数主要是要设置 fs_context->ops
+	 */
 	ret = init_fs_context(fc);
 	if (ret < 0)
 		goto err_fc;

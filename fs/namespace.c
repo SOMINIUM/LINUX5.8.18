@@ -2820,6 +2820,9 @@ static int do_new_mount_fc(struct fs_context *fc, struct path *mountpoint,
 		mntput(mnt);
 		return PTR_ERR(mp);
 	}
+	/*
+	 * 真正的把一个分区挂载一个目录下
+	 */
 	error = do_add_mount(real_mount(mnt), mp, mountpoint, mnt_flags);
 	unlock_mount(mp);
 	if (error < 0)
@@ -2856,7 +2859,9 @@ static int do_new_mount(struct path *path, const char *fstype, int sb_flags,
 			}
 		}
 	}
-
+	/*
+	 * 分配 fs_context 初始化
+	 */
 	fc = fs_context_for_mount(type, sb_flags);
 	put_filesystem(type);
 	if (IS_ERR(fc))
@@ -3383,7 +3388,9 @@ struct dentry *mount_subtree(struct vfsmount *m, const char *name)
 	return path.dentry;
 }
 EXPORT_SYMBOL(mount_subtree);
-
+/*
+ * 系统调用 mount 时的接口函数
+ */
 SYSCALL_DEFINE5(mount, char __user *, dev_name, char __user *, dir_name,
 		char __user *, type, unsigned long, flags, void __user *, data)
 {

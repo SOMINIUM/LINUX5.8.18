@@ -1533,6 +1533,9 @@ EXPORT_SYMBOL(mount_single);
  * be used for mounting.  The filesystem places a pointer to the root to be
  * used for mounting in @fc->root.
  */
+/*
+ * 主要是要拿到将被挂载的系统的根目录
+ */
 int vfs_get_tree(struct fs_context *fc)
 {
 	struct super_block *sb;

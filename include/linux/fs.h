@@ -1402,6 +1402,7 @@ extern int send_sigurg(struct fown_struct *fown);
  * sb->s_flags.  Note that these mirror the equivalent MS_* flags where
  * represented in both.
  */
+/*SB 就是super_block*/
 #define SB_RDONLY	 1	/* Mount read-only */
 #define SB_NOSUID	 2	/* Ignore suid and sgid bits */
 #define SB_NODEV	 4	/* Disallow access to device special files */

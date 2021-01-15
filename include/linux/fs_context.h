@@ -117,6 +117,10 @@ struct fs_context_operations {
 	int (*dup)(struct fs_context *fc, struct fs_context *src_fc);
 	int (*parse_param)(struct fs_context *fc, struct fs_parameter *param);
 	int (*parse_monolithic)(struct fs_context *fc, void *data);
+    /*
+     * 这个函数主要 是为了设置 fs_context->root ,这个root就是将要被挂载的
+     * 分区的根目录
+     */
 	int (*get_tree)(struct fs_context *fc);
 	int (*reconfigure)(struct fs_context *fc);
 };

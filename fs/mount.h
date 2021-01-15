@@ -39,8 +39,11 @@ struct mountpoint {
 
 struct mount {
 	struct hlist_node mnt_hash;
+    /*父挂载点*/
 	struct mount *mnt_parent;
+    /*挂载点*/
 	struct dentry *mnt_mountpoint;
+    /*结构体用来代表文件系统的实例*/
 	struct vfsmount mnt;
 	union {
 		struct rcu_head mnt_rcu;
