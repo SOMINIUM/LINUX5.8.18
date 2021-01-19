@@ -309,6 +309,7 @@ static int __init hung_task_init(void)
 	/* Disable hung task detector on suspend */
 	pm_notifier(hungtask_pm_notify, 0);
 
+	/*创建内核线程khungtaskd 检测hungtask*/
 	watchdog_task = kthread_run(watchdog, NULL, "khungtaskd");
 
 	return 0;

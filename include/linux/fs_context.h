@@ -118,7 +118,8 @@ struct fs_context_operations {
 	int (*parse_param)(struct fs_context *fc, struct fs_parameter *param);
 	int (*parse_monolithic)(struct fs_context *fc, void *data);
     /*
-     * 这个函数主要 是为了设置 fs_context->root ,这个root就是将要被挂载的
+     * 这个函数会初始化super_block,通过回调各个文件系统的fill_super来初始化
+     * 其间会设置 fs_context->root ,这个root就是将要被挂载的
      * 分区的根目录
      */
 	int (*get_tree)(struct fs_context *fc);

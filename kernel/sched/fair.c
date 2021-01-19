@@ -10108,6 +10108,15 @@ static void rebalance_domains(struct rq *rq, enum cpu_idle_type idle)
 	unsigned long interval;
 	struct sched_domain *sd;
 	/* Earliest time when we have to do rebalance again */
+	/*
+	 * 				  1000
+	 * 这里 jiffie = -------
+	 * 				   HZ
+	 * 				   			 1000
+	 * 每隔60HZ个jiffes = 60*HZ*------- = 600000ms;
+	 * 							  HZ
+	 * 也就是每60s balance 一次。
+	 */
 	unsigned long next_balance = jiffies + 60*HZ;
 	int update_next_balance = 0;
 	int need_serialize, need_decay = 0;

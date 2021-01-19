@@ -925,6 +925,10 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
  * This macro does strict typechecking of @lo/@hi to make sure they are of the
  * same type as @val.  See the unnecessary pointer comparisons.
  */
+/*
+ * 判断val是否在lo和hi的范围内，如果小于lo，返回lo，如果大于hi则返回hi，
+ * 如果在lo和hi之间就返回val
+ */
 #define clamp(val, lo, hi) min((typeof(val))max(val, lo), hi)
 
 /*

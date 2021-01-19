@@ -952,7 +952,7 @@ struct vfsmount *vfs_create_mount(struct fs_context *fc)
 
 	if (!fc->root)
 		return ERR_PTR(-EINVAL);
-
+	/*分配一个mount*/
 	mnt = alloc_vfsmnt(fc->source ?: "none");
 	if (!mnt)
 		return ERR_PTR(-ENOMEM);
@@ -961,12 +961,14 @@ struct vfsmount *vfs_create_mount(struct fs_context *fc)
 		mnt->mnt.mnt_flags = MNT_INTERNAL;
 
 	atomic_inc(&fc->root->d_sb->s_active);
+	/*主要是设置mount->mnt（vfsmount类型）*/
 	mnt->mnt.mnt_sb		= fc->root->d_sb;
 	mnt->mnt.mnt_root	= dget(fc->root);
 	mnt->mnt_mountpoint	= mnt->mnt.mnt_root;
 	mnt->mnt_parent		= mnt;
 
 	lock_mount_hash();
+	/*把mount挂到对应文件的super_block的s_mounts下*/
 	list_add_tail(&mnt->mnt_instance, &mnt->mnt.mnt_sb->s_mounts);
 	unlock_mount_hash();
 	return &mnt->mnt;
@@ -2195,6 +2197,9 @@ retry:
 		return ERR_PTR(-ENOENT);
 	}
 	namespace_lock();
+	/*
+	 * 查找挂载点 ,按代码来讲大概率是找不到
+	 */
 	mnt = lookup_mnt(path);
 	if (likely(!mnt)) {
 		struct mountpoint *mp = get_mountpoint(dentry);
@@ -2794,6 +2799,9 @@ static int do_new_mount_fc(struct fs_context *fc, struct path *mountpoint,
 			   unsigned int mnt_flags)
 {
 	struct vfsmount *mnt;
+	/*
+	 * 这里是真正的挂载点，参数中的那个 mountpoint 是path
+	 */
 	struct mountpoint *mp;
 	struct super_block *sb = fc->root->d_sb;
 	int error;
@@ -2815,6 +2823,9 @@ static int do_new_mount_fc(struct fs_context *fc, struct path *mountpoint,
 
 	mnt_warn_timestamp_expiry(mountpoint, mnt);
 
+	/*
+	 * 这里不要被名子迷惑，这里从path中找一个挂载点
+	 */
 	mp = lock_mount(mountpoint);
 	if (IS_ERR(mp)) {
 		mntput(mnt);
@@ -2860,7 +2871,7 @@ static int do_new_mount(struct path *path, const char *fstype, int sb_flags,
 		}
 	}
 	/*
-	 * 分配 fs_context 初始化
+	 * 分配 fc_context 初始化
 	 */
 	fc = fs_context_for_mount(type, sb_flags);
 	put_filesystem(type);
@@ -2877,6 +2888,7 @@ static int do_new_mount(struct path *path, const char *fstype, int sb_flags,
 	if (!err && !mount_capable(fc))
 		err = -EPERM;
 	if (!err)
+		/*设置fc的root*/
 		err = vfs_get_tree(fc);
 	if (!err)
 		err = do_new_mount_fc(fc, path, mnt_flags);
@@ -3140,6 +3152,10 @@ long do_mount(const char *dev_name, const char __user *dir_name,
 		return -EINVAL;
 
 	/* ... and get the mountpoint */
+	/*
+	 * 这里主要是找到要挂载的 path
+	 * 通过一个 dir_name打到对应的 path
+	 */
 	retval = user_path_at(AT_FDCWD, dir_name, LOOKUP_FOLLOW, &path);
 	if (retval)
 		return retval;
@@ -3193,6 +3209,7 @@ long do_mount(const char *dev_name, const char __user *dir_name,
 	if ((flags & (MS_REMOUNT | MS_BIND)) == (MS_REMOUNT | MS_BIND))
 		retval = do_reconfigure_mnt(&path, mnt_flags);
 	else if (flags & MS_REMOUNT)
+		/*remount 重新挂载的过程*/
 		retval = do_remount(&path, flags, sb_flags, mnt_flags,
 				    data_page);
 	else if (flags & MS_BIND)
@@ -3202,6 +3219,7 @@ long do_mount(const char *dev_name, const char __user *dir_name,
 	else if (flags & MS_MOVE)
 		retval = do_move_mount_old(&path, dev_name);
 	else
+		/*首次挂载的过程*/
 		retval = do_new_mount(&path, type_page, sb_flags, mnt_flags,
 				      dev_name, data_page);
 dput_out:
