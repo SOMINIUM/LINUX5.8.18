@@ -2769,7 +2769,9 @@ static void shrink_node(pg_data_t *pgdat, struct scan_control *sc)
 	struct lruvec *target_lruvec;
 	bool reclaimable = false;
 	unsigned long file;
-
+	/*
+	 * 拿到需要回收的lruvec
+	 */
 	target_lruvec = mem_cgroup_lruvec(sc->target_mem_cgroup, pgdat);
 
 again:
@@ -3605,7 +3607,9 @@ static bool kswapd_shrink_node(pg_data_t *pgdat,
 		zone = pgdat->node_zones + z;
 		if (!managed_zone(zone))
 			continue;
-
+		/*
+		 * 设置回收页面数
+		 */
 		sc->nr_to_reclaim += max(high_wmark_pages(zone), SWAP_CLUSTER_MAX);
 	}
 
@@ -3768,6 +3772,13 @@ restart:
 		 * intent is to relieve pressure not issue sub-optimal IO
 		 * from reclaim context. If no pages are reclaimed, the
 		 * reclaim will be aborted.
+		 */
+		/*
+		 * 这里的 laptop_mode 主要是针对笔记本电脑的，为了减少内存向
+		 * 磁盘回写,一般为0
+		 *
+		 * nr_boost_reclaim 如果为0, 说明不平衡，也就是说明回收压力比较大
+		 * 这个时候需要开启回收
 		 */
 		sc.may_writepage = !laptop_mode && !nr_boost_reclaim;
 		sc.may_swap = !nr_boost_reclaim;

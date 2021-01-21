@@ -7423,6 +7423,11 @@ enum fbq_type { regular, remote, all };
  * first so the group_type can simply be compared when selecting the busiest
  * group. See update_sd_pick_busiest().
  */
+/*
+ * 这个emnu反应的是调度组的繁忙程度，数值越大表示越繁忙
+ * 在 update_sd_pick_busiest 中会通过这个值来选最繁忙的组
+ *
+ */
 enum group_type {
 	/* The group has spare capacity that can be used to run more tasks.  */
 	/*
@@ -8249,6 +8254,11 @@ void update_group_capacity(struct sched_domain *sd, int cpu)
 	sdg->sgc->next_update = jiffies + interval;
 
 	if (!child) {
+		/*
+		 * 最低层的cpu，那是没有child,通常就是间个cpu，这个时候需要
+		 * 更新这个cpu的算力
+		 * 更新完就可以直接返回了
+		 */
 		update_cpu_capacity(sd, cpu);
 		return;
 	}
@@ -9039,7 +9049,10 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
 		if (local_group)
 			goto next_group;
 
-
+		/*
+		 * update_sd_pick_busiest 这个函数非常重要
+		 * 这个函数就是比较两个组的load_avg capacity等，然后更新最忙的组
+		 */
 		if (update_sd_pick_busiest(env, sds, sg, sgs)) {
 			sds->busiest = sg;
 			sds->busiest_stat = *sgs;

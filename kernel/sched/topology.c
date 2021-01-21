@@ -2051,6 +2051,9 @@ build_sched_domains(const struct cpumask *cpu_map, struct sched_domain_attr *att
 
 		for (sd = *per_cpu_ptr(d.sd, i); sd; sd = sd->parent) {
 			claim_allocations(i, sd);
+			/*
+			 * 初始化cpu的算力
+			 */
 			init_sched_groups_capacity(i, sd);
 		}
 	}

@@ -86,6 +86,9 @@ static struct notifier_block panic_block = {
 
 static void check_hung_task(struct task_struct *t, unsigned long timeout)
 {
+	/*
+	 * 进程上下文切换计数，以此来判断该进程是否发生过调度
+	 */
 	unsigned long switch_count = t->nvcsw + t->nivcsw;
 
 	/*
@@ -104,6 +107,9 @@ static void check_hung_task(struct task_struct *t, unsigned long timeout)
 		return;
 
 	if (switch_count != t->last_switch_count) {
+		/*
+		 * 更新last_switch_count计数，只在这里更新，该计数专用于hung task的检测
+		 */
 		t->last_switch_count = switch_count;
 		t->last_switch_time = jiffies;
 		return;
@@ -123,6 +129,11 @@ static void check_hung_task(struct task_struct *t, unsigned long timeout)
 	 * Ok, the task did not get scheduled for more than 2 minutes,
 	 * complain:
 	 */
+	/*
+     * hung task错误打印次数限制，防止dos攻击。默认为10次，由于是全局变量，
+     * 表示系统运行期间最多打印10次，超过后就不打印了。该参数应该可以
+     * 通过sysctl修改
+     */
 	if (sysctl_hung_task_warnings) {
 		if (sysctl_hung_task_warnings > 0)
 			sysctl_hung_task_warnings--;
@@ -137,6 +148,10 @@ static void check_hung_task(struct task_struct *t, unsigned long timeout)
 		sched_show_task(t);
 		hung_task_show_lock = true;
 
+		/*
+		 * 如果配置了 sysctl_hung_task_panic 则系统panic
+		 * 可以通过 /proc/sys/kernel/hung_task_panic 来设置
+		 * */
 		if (sysctl_hung_task_all_cpu_backtrace)
 			hung_task_show_all_bt = true;
 	}
@@ -187,6 +202,7 @@ static void check_hung_uninterruptible_tasks(unsigned long timeout)
 
 	hung_task_show_lock = false;
 	rcu_read_lock();
+	/*对每一个进程 进行检测 */
 	for_each_process_thread(g, t) {
 		if (!max_count--)
 			goto unlock;
@@ -196,6 +212,7 @@ static void check_hung_uninterruptible_tasks(unsigned long timeout)
 			last_break = jiffies;
 		}
 		/* use "==" to skip the TASK_KILLABLE tasks waiting on NFS */
+		/*只看 TASK_UNINTERRUPTIBLE*/
 		if (t->state == TASK_UNINTERRUPTIBLE)
 			check_hung_task(t, timeout);
 	}
@@ -281,6 +298,7 @@ static int watchdog(void *dummy)
 	set_user_nice(current, 0);
 
 	for ( ; ; ) {
+		/*超时时间默认120s 可通过 /proc/sys/kernel/hung_task_timeout_secs 设置*/
 		unsigned long timeout = sysctl_hung_task_timeout_secs;
 		unsigned long interval = sysctl_hung_task_check_interval_secs;
 		long t;
@@ -292,10 +310,12 @@ static int watchdog(void *dummy)
 		if (t <= 0) {
 			if (!atomic_xchg(&reset_hung_task, 0) &&
 			    !hung_detector_suspended)
+				/*检测不可中断进程*/
 				check_hung_uninterruptible_tasks(timeout);
 			hung_last_checked = jiffies;
 			continue;
 		}
+		/*120s后调度执行*/
 		schedule_timeout_interruptible(t);
 	}
 

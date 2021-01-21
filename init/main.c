@@ -1062,6 +1062,9 @@ asmlinkage __visible void __init start_kernel(void)
 	proc_root_init();
 	nsfs_init();
 	cpuset_init();
+	/*
+	 *  cgroup 机制初始化
+	 */
 	cgroup_init();
 	taskstats_init_early();
 	delayacct_init();

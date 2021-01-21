@@ -507,12 +507,18 @@ struct cgroup {
  * internal to cgroup core.  Don't access directly from controllers.
  */
 struct cgroup_root {
+    /*
+     * kernfs 根节点
+     */
 	struct kernfs_root *kf_root;
 
 	/* The bitmask of subsystems attached to this hierarchy */
 	unsigned int subsys_mask;
 
 	/* Unique id for this hierarchy. */
+    /*
+     * 唯一id
+     */
 	int hierarchy_id;
 
 	/* The root cgroup.  Root is destroyed on its release. */
@@ -522,6 +528,9 @@ struct cgroup_root {
 	u64 cgrp_ancestor_id_storage;
 
 	/* Number of cgroups in the hierarchy, used only for /proc/cgroups */
+    /*
+     * 当前 hierarchy 上的cgoups节点数
+     */
 	atomic_t nr_cgrps;
 
 	/* A list running through the active hierarchies */

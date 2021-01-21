@@ -727,6 +727,9 @@ EXPORT_SYMBOL_GPL(of_css);
  * reference-counted, to improve performance when child cgroups
  * haven't been created.
  */
+/*
+ * 祖先mount点
+ */
 struct css_set init_css_set = {
 	.refcount		= REFCOUNT_INIT(1),
 	.dom_cset		= &init_css_set,
@@ -5675,6 +5678,11 @@ int __init cgroup_init(void)
 	int ssid;
 
 	BUILD_BUG_ON(CGROUP_SUBSYS_COUNT > 16);
+	/*
+	 * 两个数组  cgroup_base_files cgroup1_base_files
+	 *
+	 * 初步理解 定义的是用户层的控制接口
+	 */
 	BUG_ON(cgroup_init_cftypes(NULL, cgroup_base_files));
 	BUG_ON(cgroup_init_cftypes(NULL, cgroup1_base_files));
 
@@ -5693,6 +5701,9 @@ int __init cgroup_init(void)
 	/*
 	 * Add init_css_set to the hash table so that dfl_root can link to
 	 * it during init.
+	 */
+	/*
+	 * 将 init_css_set 加入 css_set_table
 	 */
 	hash_add(css_set_table, &init_css_set.hlist,
 		 css_set_hash(init_css_set.subsys));
