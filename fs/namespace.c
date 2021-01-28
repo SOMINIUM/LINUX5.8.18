@@ -2786,6 +2786,9 @@ static int do_add_mount(struct mount *newmnt, struct mountpoint *mp,
 		return -EINVAL;
 
 	newmnt->mnt.mnt_flags = mnt_flags;
+	/*
+	 * 植入目录树
+	 */
 	return graft_tree(newmnt, parent, mp);
 }
 

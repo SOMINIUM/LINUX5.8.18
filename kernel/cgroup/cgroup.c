@@ -2156,7 +2156,10 @@ static void cgroup_kill_sb(struct super_block *sb)
 	cgroup_put(&root->cgrp);
 	kernfs_kill_sb(sb);
 }
-
+/*
+ * 定义 cgroup_fs_type
+ *
+ */
 struct file_system_type cgroup_fs_type = {
 	.name			= "cgroup",
 	.init_fs_context	= cgroup_init_fs_context,
@@ -2165,6 +2168,10 @@ struct file_system_type cgroup_fs_type = {
 	.fs_flags		= FS_USERNS_MOUNT,
 };
 
+/*
+ * 定义 cgroup2_fs_type
+ *
+ */
 static struct file_system_type cgroup2_fs_type = {
 	.name			= "cgroup2",
 	.init_fs_context	= cgroup_init_fs_context,
@@ -5712,8 +5719,15 @@ int __init cgroup_init(void)
 
 	mutex_unlock(&cgroup_mutex);
 
+	/* 在include/linux/cgroup.h 74行 这里定义所有的cgroup_subsys*/
 	for_each_subsys(ss, ssid) {
+		/*
+		 * 下面的代码就是设置各个 cgroup_subsys
+		 */
 		if (ss->early_init) {
+			/*
+			 * 有 early_init 则调用
+			 */
 			struct cgroup_subsys_state *css =
 				init_css_set.subsys[ss->id];
 
@@ -5721,6 +5735,13 @@ int __init cgroup_init(void)
 						   GFP_KERNEL);
 			BUG_ON(css->id < 0);
 		} else {
+			/*
+			 * 无 early_init 则调用 cgroup_init_subsys
+			 *
+			 * 这会将在 include/linux/cgroup.h 中定义的 cgroup_subsys
+			 * 设置到各个subsys实现的代码中定义的全局中
+			 * 如 在 mm/memcontrol.c 中定义的 root_mem_cgroup
+			 */
 			cgroup_init_subsys(ss, false);
 		}
 
@@ -5775,12 +5796,26 @@ int __init cgroup_init(void)
 	hash_del(&init_css_set.hlist);
 	hash_add(css_set_table, &init_css_set.hlist,
 		 css_set_hash(init_css_set.subsys));
-
+	/*
+	 * 创建根cgroup挂载点 /sys/fs/cgroup
+	 */
 	WARN_ON(sysfs_create_mount_point(fs_kobj, "cgroup"));
+	/*
+	 * 注册 cgroup_fs_type
+	 */
 	WARN_ON(register_filesystem(&cgroup_fs_type));
+	/*
+	 * 注册 cgroup2_fs_type
+	 */
 	WARN_ON(register_filesystem(&cgroup2_fs_type));
+	/*
+	 * 创建 proc 节点
+	 */
 	WARN_ON(!proc_create_single("cgroups", 0, NULL, proc_cgroupstats_show));
 #ifdef CONFIG_CPUSETS
+	/*
+	 * 注册 cpuset_fs_type
+	 */
 	WARN_ON(register_filesystem(&cpuset_fs_type));
 #endif
 
