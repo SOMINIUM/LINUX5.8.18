@@ -46,6 +46,10 @@ int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
 	if (WARN_ON(!kobj))
 		return -EINVAL;
 
+	/*
+	 * 如果没有parent ,那么设置parent = sysfs_root_kn
+	 * 也就是会 /sys 目录下创建文件夹
+	 */
 	if (kobj->parent)
 		parent = kobj->parent->sd;
 	else
@@ -56,6 +60,9 @@ int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
 
 	kobject_get_ownership(kobj, &uid, &gid);
 
+	/*
+	 * 创建kernfs_node
+	 */
 	kn = kernfs_create_dir_ns(parent, kobject_name(kobj),
 				  S_IRWXU | S_IRUGO | S_IXUGO, uid, gid,
 				  kobj, ns);

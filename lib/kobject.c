@@ -70,6 +70,10 @@ static int populate_dir(struct kobject *kobj)
 	int error = 0;
 	int i;
 
+	/*
+	 * 基于ktype的 default_attrs 来创建文件
+	 * 我们在驱动中加入的那些
+	 */
 	if (t && t->default_attrs) {
 		for (i = 0; (attr = t->default_attrs[i]) != NULL; i++) {
 			error = sysfs_create_file(kobj, attr);
@@ -86,10 +90,17 @@ static int create_dir(struct kobject *kobj)
 	const struct kobj_ns_type_operations *ops;
 	int error;
 
+	/*
+	 * 在这会将会创建文件对应的 kernfs_node
+	 */
 	error = sysfs_create_dir_ns(kobj, kobject_namespace(kobj));
 	if (error)
 		return error;
 
+	/*
+	 * 这里就是在上面一步创建的文件夹下创建相应的文件
+	 *
+	 */
 	error = populate_dir(kobj);
 	if (error) {
 		sysfs_remove_dir(kobj);
@@ -97,6 +108,10 @@ static int create_dir(struct kobject *kobj)
 	}
 
 	if (ktype) {
+		/*
+		 * 这里同样是创建文件
+		 *
+		 */
 		error = sysfs_create_groups(kobj, ktype->default_groups);
 		if (error) {
 			sysfs_remove_dir(kobj);
@@ -240,6 +255,9 @@ static int kobject_add_internal(struct kobject *kobj)
 	parent = kobject_get(kobj->parent);
 
 	/* join kset if set, use it as parent if we do not already have one */
+	/*
+	 * 加入kset,如果当前kobj没有设置 parent, parent会被更新为kset的kobject
+	 */
 	if (kobj->kset) {
 		if (!parent)
 			parent = kobject_get(&kobj->kset->kobj);
@@ -251,7 +269,10 @@ static int kobject_add_internal(struct kobject *kobj)
 		 kobject_name(kobj), kobj, __func__,
 		 parent ? kobject_name(parent) : "<NULL>",
 		 kobj->kset ? kobject_name(&kobj->kset->kobj) : "<NULL>");
-
+	/*
+	 * 每一个kobject都会对应一个文件夹,这里就是为这个kobject创建它在
+	 * sysfs中的文件夹
+	 */
 	error = create_dir(kobj);
 	if (error) {
 		kobj_kset_leave(kobj);
@@ -381,11 +402,17 @@ static __printf(3, 0) int kobject_add_varg(struct kobject *kobj,
 {
 	int retval;
 
+	/*
+	 * 设置 name properly
+	 */
 	retval = kobject_set_name_vargs(kobj, fmt, vargs);
 	if (retval) {
 		pr_err("kobject: can not set name properly!\n");
 		return retval;
 	}
+	/*
+	 * 设置父结点
+	 */
 	kobj->parent = parent;
 	return kobject_add_internal(kobj);
 }
@@ -439,6 +466,9 @@ int kobject_add(struct kobject *kobj, struct kobject *parent,
 		return -EINVAL;
 	}
 	va_start(args, fmt);
+	/*
+	 * 关键调用
+	 */
 	retval = kobject_add_varg(kobj, parent, fmt, args);
 	va_end(args);
 

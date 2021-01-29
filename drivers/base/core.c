@@ -2576,6 +2576,10 @@ static int device_private_init(struct device *dev)
  * *not* succeeded, use *only* put_device() to drop the reference
  * count.
  */
+/*
+ * 基本不会被我们加的驱动程序直接调用,但是这个函数将会被很多函数调用，
+ * i2c input等设备驱动都会调用
+ */
 int device_add(struct device *dev)
 {
 	struct device *parent;
@@ -2630,6 +2634,9 @@ int device_add(struct device *dev)
 
 	/* first, register with generic layer. */
 	/* we require the name to be set before, and pass NULL */
+	/*
+	 * 重点函数调用,在这里会创建文件结点
+	 */
 	error = kobject_add(&dev->kobj, dev->kobj.parent, NULL);
 	if (error) {
 		glue_dir = get_glue_dir(dev);

@@ -40,6 +40,9 @@ static int create_files(struct kernfs_node *parent, struct kobject *kobj,
 	int error = 0, i;
 
 	if (grp->attrs) {
+		/*
+		 * 逐个处理 attribute
+		 */
 		for (i = 0, attr = grp->attrs; *attr && !error; i++, attr++) {
 			umode_t mode = (*attr)->mode;
 
@@ -71,7 +74,9 @@ static int create_files(struct kernfs_node *parent, struct kobject *kobj,
 			goto exit;
 		}
 	}
-
+	/*
+	 * 单独处理 bin_attr
+	 */
 	if (grp->bin_attrs) {
 		for (i = 0, bin_attr = grp->bin_attrs; *bin_attr; i++, bin_attr++) {
 			umode_t mode = (*bin_attr)->attr.mode;

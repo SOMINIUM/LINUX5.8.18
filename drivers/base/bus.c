@@ -814,6 +814,10 @@ int bus_register(struct bus_type *bus)
 
 	BLOCKING_INIT_NOTIFIER_HEAD(&priv->bus_notifier);
 
+	/*
+	 * 设置目录名
+	 */
+
 	retval = kobject_set_name(&priv->subsys.kobj, "%s", bus->name);
 	if (retval)
 		goto out;
@@ -822,14 +826,24 @@ int bus_register(struct bus_type *bus)
 	priv->subsys.kobj.ktype = &bus_ktype;
 	priv->drivers_autoprobe = 1;
 
+	/*
+	 * 创建总线目录
+	 */
+
 	retval = kset_register(&priv->subsys);
 	if (retval)
 		goto out;
+	/*
+	 * 创建 bus 下 uevent 节点
+	 */
 
 	retval = bus_create_file(bus, &bus_attr_uevent);
 	if (retval)
 		goto bus_uevent_fail;
 
+	/*
+	 * 创建 bus 下的 device 目录
+	 */
 	priv->devices_kset = kset_create_and_add("devices", NULL,
 						 &priv->subsys.kobj);
 	if (!priv->devices_kset) {
@@ -837,6 +851,9 @@ int bus_register(struct bus_type *bus)
 		goto bus_devices_fail;
 	}
 
+	/*
+	 * 创建 bus 下的 driver 目录
+	 */
 	priv->drivers_kset = kset_create_and_add("drivers", NULL,
 						 &priv->subsys.kobj);
 	if (!priv->drivers_kset) {
@@ -849,10 +866,16 @@ int bus_register(struct bus_type *bus)
 	klist_init(&priv->klist_devices, klist_devices_get, klist_devices_put);
 	klist_init(&priv->klist_drivers, NULL, NULL);
 
+	/*
+	 * 创建 bus 下的 drivers_autoprobe 和 drivers_probe 节点
+	 */
 	retval = add_probe_files(bus);
 	if (retval)
 		goto bus_probe_files_fail;
 
+	/*
+	 * 创建 bus 下的总线自定义的节点
+	 */
 	retval = bus_add_groups(bus, bus->bus_groups);
 	if (retval)
 		goto bus_groups_fail;
