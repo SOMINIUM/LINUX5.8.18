@@ -637,7 +637,9 @@ static void i2cdev_dev_release(struct device *dev)
 	i2c_dev = container_of(dev, struct i2c_dev, dev);
 	kfree(i2c_dev);
 }
-
+/*
+ * 这会添加设备
+ */
 static int i2cdev_attach_adapter(struct device *dev, void *dummy)
 {
 	struct i2c_adapter *adap;
@@ -648,10 +650,16 @@ static int i2cdev_attach_adapter(struct device *dev, void *dummy)
 		return 0;
 	adap = to_i2c_adapter(dev);
 
+	/*
+	 * 分配一个i2c_dev结构体
+	 */
 	i2c_dev = get_free_i2c_dev(adap);
 	if (IS_ERR(i2c_dev))
 		return PTR_ERR(i2c_dev);
 
+	/*
+	 * 初始化i2c_dev字符设备操作函数
+	 */
 	cdev_init(&i2c_dev->cdev, &i2cdev_fops);
 	i2c_dev->cdev.owner = THIS_MODULE;
 
@@ -662,6 +670,9 @@ static int i2cdev_attach_adapter(struct device *dev, void *dummy)
 	i2c_dev->dev.release = i2cdev_dev_release;
 	dev_set_name(&i2c_dev->dev, "i2c-%d", adap->nr);
 
+	/*
+	 * 添加一个字符设备 同时会调用 device_add
+	 */
 	res = cdev_device_add(&i2c_dev->cdev, &i2c_dev->dev);
 	if (res) {
 		put_i2c_dev(i2c_dev, false);
@@ -717,16 +728,27 @@ static struct notifier_block i2cdev_notifier = {
  * module load/unload record keeping
  */
 
+/*
+ * i2c dev 初始化
+ * 创建 /sys/class/i2c-dev/
+ *
+ */
+
 static int __init i2c_dev_init(void)
 {
 	int res;
 
 	printk(KERN_INFO "i2c /dev entries driver\n");
-
+	/*
+	 * 注册设备号
+	 */
 	res = register_chrdev_region(MKDEV(I2C_MAJOR, 0), I2C_MINORS, "i2c");
 	if (res)
 		goto out;
 
+	/*
+	 * 创建 /sys/class/i2c-dev/
+	 */
 	i2c_dev_class = class_create(THIS_MODULE, "i2c-dev");
 	if (IS_ERR(i2c_dev_class)) {
 		res = PTR_ERR(i2c_dev_class);
@@ -735,11 +757,21 @@ static int __init i2c_dev_init(void)
 	i2c_dev_class->dev_groups = i2c_groups;
 
 	/* Keep track of adapters which will be added or removed later */
+	/*
+	 * 注册通知,如果有新的adapter加入或者删除,则会收到通知
+	 * 会执行  i2cdev_attach_adapter 或者 i2cdev_detach_adapter
+	 */
 	res = bus_register_notifier(&i2c_bus_type, &i2cdev_notifier);
 	if (res)
 		goto out_unreg_class;
 
 	/* Bind to already existing adapters right away */
+	/*
+	 * 对于已经存在的 adapter 执行 i2cdev_attach_adapter
+	 *
+	 * 这里会在 /sys/class/i2c-adapter/ 下创建i2c-1 i2c-2 这样的设备
+	 *
+	 */
 	i2c_for_each_dev(NULL, i2cdev_attach_adapter);
 
 	return 0;

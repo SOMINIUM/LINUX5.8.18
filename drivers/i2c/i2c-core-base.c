@@ -1735,6 +1735,11 @@ void i2c_clients_command(struct i2c_adapter *adap, unsigned int cmd, void *arg)
 	device_for_each_child(&adap->dev, &cmd_arg, i2c_cmd);
 }
 EXPORT_SYMBOL(i2c_clients_command);
+/*
+ *
+ * 创建/sys/bus/i2c/
+ *
+ */
 
 static int __init i2c_init(void)
 {
@@ -1746,7 +1751,9 @@ static int __init i2c_init(void)
 	if (retval >= __i2c_first_dynamic_bus_num)
 		__i2c_first_dynamic_bus_num = retval + 1;
 	up_write(&__i2c_board_lock);
-
+	/*
+	 * 注册总线 创建 /sys/bus/i2c/
+	 */
 	retval = bus_register(&i2c_bus_type);
 	if (retval)
 		return retval;
@@ -1754,6 +1761,9 @@ static int __init i2c_init(void)
 	is_registered = true;
 
 #ifdef CONFIG_I2C_COMPAT
+	/*
+	 * 创建 /sys/class/i2c-adapter/
+	 */
 	i2c_adapter_compat_class = class_compat_register("i2c-adapter");
 	if (!i2c_adapter_compat_class) {
 		retval = -ENOMEM;

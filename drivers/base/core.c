@@ -43,7 +43,7 @@ static int __init sysfs_deprecated_setup(char *arg)
 }
 early_param("sysfs.deprecated", sysfs_deprecated_setup);
 #endif
-
+/*TODO*/
 /* Device links support. */
 static LIST_HEAD(wait_for_suppliers);
 static DEFINE_MUTEX(wfs_lock);

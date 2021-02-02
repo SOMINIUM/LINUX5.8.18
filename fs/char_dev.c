@@ -545,7 +545,9 @@ int cdev_device_add(struct cdev *cdev, struct device *dev)
 		if (rc)
 			return rc;
 	}
-
+	/*
+	 * 添加设备
+	 */
 	rc = device_add(dev);
 	if (rc)
 		cdev_del(cdev);
