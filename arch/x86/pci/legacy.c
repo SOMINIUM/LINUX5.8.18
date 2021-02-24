@@ -62,6 +62,9 @@ static int __init pci_subsys_init(void)
 	 * pci_legacy_init should be invoked.
 	 */
 	if (x86_init.pci.init()) {
+		/*
+		 * 在没有使用acpi的情况下使用 pci_legacy_init 来初始化
+		 */
 		if (pci_legacy_init()) {
 			pr_info("PCI: System does not support PCI\n");
 			return -ENODEV;

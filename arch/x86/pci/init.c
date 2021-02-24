@@ -8,9 +8,14 @@
    in the right sequence from here. */
 static __init int pci_arch_init(void)
 {
+/*
+ * 由内核自己来识别pci的设备建立设备树,不从bios读取
+ */
 #ifdef CONFIG_PCI_DIRECT
 	int type = 0;
-
+	/*
+	 * 开始探测设备
+	 */
 	type = pci_direct_probe();
 #endif
 
@@ -20,6 +25,9 @@ static __init int pci_arch_init(void)
 	if (x86_init.pci.arch_init && !x86_init.pci.arch_init())
 		return 0;
 
+/*
+ * 从bios读取pci设备树
+ */
 #ifdef CONFIG_PCI_BIOS
 	pci_pcbios_init();
 #endif
