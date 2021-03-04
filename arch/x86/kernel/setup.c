@@ -1156,10 +1156,14 @@ void __init setup_arch(char **cmdline_p)
 
 	/*
 	 * Parse the ACPI tables for possible boot-time SMP configuration.
+	 * ***************************************************************
+	 * ACPI部分开始
 	 */
 	acpi_boot_table_init();
 
 	early_acpi_boot_init();
+
+	/****************************************************************/
 
 	initmem_init();
 	dma_contiguous_reserve(max_pfn_mapped << PAGE_SHIFT);
@@ -1200,8 +1204,10 @@ void __init setup_arch(char **cmdline_p)
 
 	/*
 	 * Read APIC and some other early information from ACPI tables.
+	 * 依次分析ACPI的各种表
 	 */
 	acpi_boot_init();
+
 	sfi_init();
 	x86_dtb_init();
 

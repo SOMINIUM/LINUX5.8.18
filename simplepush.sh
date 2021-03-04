@@ -3,6 +3,6 @@ git commit -m "Add new comment"
 git push
 
 echo "reconfig ctags cocope"
-ctags -R
-cscope -Rbqk
+# ctags -R
+# cscope -Rbqk
 

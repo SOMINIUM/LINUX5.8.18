@@ -99,6 +99,9 @@ acpi_initialize_tables(struct acpi_table_desc *initial_table_array,
 	}
 
 	/* Get the address of the RSDP */
+	/*
+	 * 获取RSDT根表地址, root system description table
+	 */
 
 	rsdp_address = acpi_os_get_root_pointer();
 	if (!rsdp_address) {
@@ -109,6 +112,9 @@ acpi_initialize_tables(struct acpi_table_desc *initial_table_array,
 	 * Get the root table (RSDT or XSDT) and extract all entries to the local
 	 * Root Table Array. This array contains the information of the RSDT/XSDT
 	 * in a common, more usable format.
+	 */
+	/*
+	 * 处理RSDT/XSDT
 	 */
 	status = acpi_tb_parse_root_table(rsdp_address);
 	return_ACPI_STATUS(status);

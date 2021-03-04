@@ -2022,7 +2022,6 @@ config KEXEC_SIG
 	bool "Verify kernel signature during kexec_file_load() syscall"
 	depends on KEXEC_FILE
 	help
-
 	  This option makes the kexec_file_load() syscall check for a valid
 	  signature of the kernel image.  The image can still be loaded without
 	  a valid signature unless you also enable KEXEC_SIG_FORCE, though if
