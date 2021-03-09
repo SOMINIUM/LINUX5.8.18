@@ -353,6 +353,10 @@ void __init setup_arch(char **cmdline_p)
 	/* Parse the ACPI tables for possible boot-time configuration */
 	acpi_boot_table_init();
 
+	/*
+	 * 在acpi disabled 的情况下进行device-tree的处理
+	 */
+
 	if (acpi_disabled)
 		unflatten_device_tree();
 

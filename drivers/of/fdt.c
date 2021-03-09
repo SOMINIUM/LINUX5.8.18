@@ -391,6 +391,9 @@ void *__unflatten_device_tree(const void *blob,
 	}
 
 	/* First pass, scan for size */
+	/*
+	 * 第一步处理,扫描大小
+	 */
 	size = unflatten_dt_nodes(blob, NULL, dad, NULL);
 	if (size < 0)
 		return NULL;
@@ -1187,6 +1190,9 @@ bool __init early_init_dt_verify(void *params)
 		return false;
 
 	/* Setup flat device-tree pointer */
+	/*
+	 * 设置device tree的地址
+	 */
 	initial_boot_params = params;
 	of_fdt_crc32 = crc32_be(~0, initial_boot_params,
 				fdt_totalsize(initial_boot_params));

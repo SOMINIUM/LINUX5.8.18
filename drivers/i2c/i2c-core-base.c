@@ -1176,6 +1176,10 @@ static int i2c_do_add_adapter(struct i2c_driver *driver,
 			      struct i2c_adapter *adap)
 {
 	/* Detect supported devices on that bus, and instantiate them */
+	/*
+	 * 每当 adapter 上有新的 client 设备加入或者新的i2c设备驱动加入进
+	 * 都会调用此函数来进入设备与驱动的匹配
+	 */
 	i2c_detect(adap, driver);
 
 	return 0;
@@ -1335,6 +1339,9 @@ static int i2c_register_adapter(struct i2c_adapter *adap)
 	i2c_init_recovery(adap);
 
 	/* create pre-declared device nodes */
+	/*
+	 * 处理子节点,也就是挂在i2c adapter下面的设备,会被创建成i2c client设备
+	 */
 	of_i2c_register_devices(adap);
 	i2c_acpi_install_space_handler(adap);
 	i2c_acpi_register_devices(adap);
@@ -1393,6 +1400,17 @@ static int __i2c_add_numbered_adapter(struct i2c_adapter *adap)
  * When this returns zero, a new bus number was allocated and stored
  * in adap->nr, and the specified adapter became available for clients.
  * Otherwise, a negative errno value is returned.
+ */
+
+/*
+ * 用于adapter驱动调用注册 adapter
+ * 另外:按照总线,设备,驱动的模型其实,adapter设备已经完成了于驱动的配对,那这里
+ * 的 i2c_add_adapter 的作用是什么?
+ *
+ * 因为i2c client 设备是挂载在adapter下,这部分的设备,只有在adapter正确驱动之后
+ * 才会能被加入系统,因为如果 adapter 不能正确工作, 那client设备也必然无法工作,
+ * 所以这部分设备只能在 adapter 加载之后才能被加载, 也就是需要adpter的驱动主动
+ * 调用 i2c_add_adapter 来加载与些adapter相关的client设备.
  */
 int i2c_add_adapter(struct i2c_adapter *adapter)
 {

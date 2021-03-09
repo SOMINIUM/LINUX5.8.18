@@ -100,7 +100,9 @@ void of_i2c_register_devices(struct i2c_adapter *adap)
 	for_each_available_child_of_node(bus, node) {
 		if (of_node_test_and_set_flag(node, OF_POPULATED))
 			continue;
-
+		/*
+		 * 创建i2c client 设备并加入系统
+		 */
 		client = of_i2c_register_device(adap, node);
 		if (IS_ERR(client)) {
 			dev_err(&adap->dev,

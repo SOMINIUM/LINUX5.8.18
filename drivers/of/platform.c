@@ -539,6 +539,9 @@ static int __init of_platform_default_populate_init(void)
 
 	/* Populate everything else. */
 	fw_devlink_pause();
+	/*
+	 * 这里创建根目录下的platform device
+	 */
 	of_platform_default_populate(NULL, NULL, NULL);
 	fw_devlink_resume();
 

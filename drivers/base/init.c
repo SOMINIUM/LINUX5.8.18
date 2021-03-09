@@ -31,6 +31,10 @@ void __init driver_init(void)
 	 * core core pieces.
 	 */
 	of_core_init();
+	/*
+	 * 加入platform bus
+	 * 创建了/sys/devices/platform/
+	 */
 	platform_bus_init();
 	cpu_dev_init();
 	memory_dev_init();

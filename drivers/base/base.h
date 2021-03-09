@@ -44,7 +44,15 @@ struct subsys_private {
 	struct mutex mutex;
 
 	struct kset *drivers_kset;
+    /*
+     * 用于挂总线设备
+     * 在调用 bus_add_device 时加入设备
+     */
 	struct klist klist_devices;
+    /*
+     * 用于挂总线驱动程序
+     * 在调用 bus_add_driver 时加入驱动
+     */
 	struct klist klist_drivers;
 	struct blocking_notifier_head bus_notifier;
 	unsigned int drivers_autoprobe:1;
