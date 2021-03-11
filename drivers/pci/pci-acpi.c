@@ -1346,7 +1346,9 @@ static int __init acpi_pci_init(void)
 		pr_info("ACPI FADT declares the system doesn't support PCIe ASPM, so disable it\n");
 		pcie_no_aspm();
 	}
-
+	/*
+	 * 注册pci总线,这里仅仅是放入一个链表,而不是调用bus_add
+	 */
 	ret = register_acpi_bus_type(&acpi_pci_bus);
 	if (ret)
 		return 0;

@@ -166,6 +166,9 @@ acpi_ns_walk_namespace(acpi_object_type type,
 	ACPI_FUNCTION_TRACE(ns_walk_namespace);
 
 	/* Special case for the namespace Root Node */
+	/*
+	 *  指向根node
+	 */
 
 	if (start_node == ACPI_ROOT_OBJECT) {
 		start_node = acpi_gbl_root_node;

@@ -114,7 +114,7 @@ acpi_initialize_tables(struct acpi_table_desc *initial_table_array,
 	 * in a common, more usable format.
 	 */
 	/*
-	 * 处理RSDT/XSDT
+	 * 处理安装各种表
 	 */
 	status = acpi_tb_parse_root_table(rsdp_address);
 	return_ACPI_STATUS(status);
