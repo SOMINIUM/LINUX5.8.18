@@ -1991,6 +1991,9 @@ static void acpi_bus_attach(struct acpi_device *device)
 		goto ok;
 	}
 
+	/*
+	 * 使用对应该的handler进行attach
+	 */
 	ret = acpi_scan_attach_handler(device);
 	if (ret < 0)
 		return;
@@ -2064,6 +2067,10 @@ int acpi_bus_scan(acpi_handle handle)
 				    acpi_bus_check_add, NULL, NULL, &device);
 
 	if (device) {
+		/*
+		 * 这里device其实就是一棵设备树类型 为acpi_device
+		 * acpi_bus_attach 会加载其实对应hid的handler
+		 */
 		acpi_bus_attach(device);
 		return 0;
 	}

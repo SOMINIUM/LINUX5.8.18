@@ -943,7 +943,6 @@ acpi_get_data_full(acpi_handle obj_handle, acpi_object_handler handler,
 	/* Convert and validate the handle */
 
 	/*
-	 * 这里会返回 root acpi_namespace_node
 	 */
 	node = acpi_ns_validate_handle(obj_handle);
 	if (!node) {

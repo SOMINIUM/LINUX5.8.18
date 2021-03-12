@@ -1159,6 +1159,11 @@ void __init setup_arch(char **cmdline_p)
 	 * ***************************************************************
 	 * ACPI部分开始
 	 */
+
+	/*
+	 * 加载各种acpi表
+	 *
+	 */
 	acpi_boot_table_init();
 
 	early_acpi_boot_init();

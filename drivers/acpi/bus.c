@@ -1048,6 +1048,9 @@ void __init acpi_early_init(void)
 		goto error0;
 	}
 
+	/*
+	 * 根节点的处理,还有顶层的namespace node 的处理
+	 */
 	status = acpi_initialize_subsystem();
 	if (ACPI_FAILURE(status)) {
 		printk(KERN_ERR PREFIX
@@ -1237,7 +1240,9 @@ static int __init acpi_init(void)
 		printk(KERN_WARNING "%s: kset create error\n", __func__);
 		acpi_kobj = NULL;
 	}
-
+	/*
+	 * 加载的新的acpi_namespace_node到 node树
+	 */
 	result = acpi_bus_init();
 	if (result) {
 		disable_acpi();

@@ -74,6 +74,9 @@ acpi_status ACPI_INIT_FUNCTION acpi_initialize_subsystem(void)
 	 * Initialize the namespace manager and
 	 * the root of the namespace tree
 	 */
+	/*
+	 * 对acpi_gbl_pre_defined_names各个项创建对应的节点变挂到根节点下
+	 */
 	status = acpi_ns_root_initialize();
 	if (ACPI_FAILURE(status)) {
 		ACPI_EXCEPTION((AE_INFO, status,

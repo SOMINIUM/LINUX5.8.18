@@ -1032,6 +1032,9 @@ asmlinkage __visible void __init start_kernel(void)
 #endif
 	setup_per_cpu_pageset();
 	numa_policy_init();
+	/*
+	 * acpi 根节点的处理,还有顶层的namespace node 的处理
+	 */
 	acpi_early_init();
 	if (late_time_init)
 		late_time_init();
