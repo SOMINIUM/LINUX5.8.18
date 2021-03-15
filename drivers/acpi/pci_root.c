@@ -526,6 +526,9 @@ static void negotiate_os_control(struct acpi_pci_root *root, int *no_aspm,
 	}
 }
 
+/*
+ * 这里就开始添加pci root设备
+ */
 static int acpi_pci_root_add(struct acpi_device *device,
 			     const struct acpi_device_id *not_used)
 {

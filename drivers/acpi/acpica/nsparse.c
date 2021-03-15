@@ -113,6 +113,9 @@ acpi_ns_execute_table(u32 table_index, struct acpi_namespace_node *start_node)
 			      "%-26s:  (Definition Block level)\n",
 			      "Module-level evaluation"));
 
+	/*
+	 * 关键节点 创建acpi_namespace_node树
+	 */
 	status = acpi_ps_execute_table(info);
 
 	/* Optional object evaluation log */
@@ -265,6 +268,9 @@ acpi_ns_parse_table(u32 table_index, struct acpi_namespace_node *start_node)
 			      "%s: **** Start table execution pass\n",
 			      ACPI_GET_FUNCTION_NAME));
 
+	/*
+	 * 关键节点 创建acpi_namespace_node树
+	 */
 	status = acpi_ns_execute_table(table_index, start_node);
 
 	return_ACPI_STATUS(status);

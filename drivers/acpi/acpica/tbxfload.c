@@ -55,7 +55,9 @@ acpi_status ACPI_INIT_FUNCTION acpi_load_tables(void)
 	}
 
 	/* Load the namespace from the tables */
-
+	/*
+	 * 关键节点 创建acpi_namespace_node树
+	 */
 	status = acpi_tb_load_namespace();
 
 	/* Don't let single failures abort the load */
@@ -117,6 +119,11 @@ acpi_status acpi_tb_load_namespace(void)
 	 */
 	table = &acpi_gbl_root_table_list.tables[acpi_gbl_dsdt_index];
 
+	/*
+	 * DSDT可以说是最重要的一个表,创建acpi_namespace_node树,需要的node
+	 * 全部来自于这个表
+	 */
+
 	if (!acpi_gbl_root_table_list.current_table_count ||
 	    !ACPI_COMPARE_NAMESEG(table->signature.ascii, ACPI_SIG_DSDT) ||
 	    ACPI_FAILURE(acpi_tb_validate_table(table))) {
@@ -155,6 +162,9 @@ acpi_status acpi_tb_load_namespace(void)
 	/* Load and parse tables */
 
 	(void)acpi_ut_release_mutex(ACPI_MTX_TABLES);
+	/*
+	 * 关键节点 创建acpi_namespace_node树
+	 */
 	status = acpi_ns_load_table(acpi_gbl_dsdt_index, acpi_gbl_root_node);
 	(void)acpi_ut_acquire_mutex(ACPI_MTX_TABLES);
 	if (ACPI_FAILURE(status)) {

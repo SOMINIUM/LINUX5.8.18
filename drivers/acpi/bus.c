@@ -1127,6 +1127,9 @@ static int __init acpi_bus_init(void)
 
 	acpi_os_initialize1();
 
+	/*
+	 * 创建acpi_namespace_node树
+	 */
 	status = acpi_load_tables();
 	if (ACPI_FAILURE(status)) {
 		printk(KERN_ERR PREFIX
@@ -1241,7 +1244,7 @@ static int __init acpi_init(void)
 		acpi_kobj = NULL;
 	}
 	/*
-	 * 加载的新的acpi_namespace_node到 node树
+	 * 这里会生成一个apci_namespace_node树
 	 */
 	result = acpi_bus_init();
 	if (result) {

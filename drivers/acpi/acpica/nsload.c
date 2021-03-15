@@ -68,6 +68,10 @@ acpi_ns_load_table(u32 table_index, struct acpi_namespace_node *node)
 	 * to another control method, we can't continue parsing
 	 * because we don't know how many arguments to parse next!
 	 */
+
+	/*
+	 * 关键节点 创建acpi_namespace_node树
+	 */
 	status = acpi_ns_parse_table(table_index, node);
 	if (ACPI_SUCCESS(status)) {
 		acpi_tb_set_table_loaded_flag(table_index, TRUE);
