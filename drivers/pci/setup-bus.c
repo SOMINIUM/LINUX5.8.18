@@ -1844,6 +1844,9 @@ dump:
 	pci_bus_dump_resources(bus);
 }
 
+/*
+ * 处理PCI设备的BAR空间
+ */
 void __init pci_assign_unassigned_resources(void)
 {
 	struct pci_bus *root_bus;

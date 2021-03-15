@@ -340,6 +340,9 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
 		return NULL;
 	}
 
+	/*
+	 * 如果bus已经添加,这里返回的bus不为空
+	 */
 	bus = pci_find_bus(domain, busnum);
 	if (bus) {
 		/*
@@ -365,6 +368,9 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
 			info->sd.domain = domain;
 			info->sd.node = node;
 			info->sd.companion = root->device;
+			/*
+			 * 创建总线并扫描总线上的设备
+			 */
 			bus = acpi_pci_root_create(root, &acpi_pci_root_ops,
 						   &info->common, &info->sd);
 		}

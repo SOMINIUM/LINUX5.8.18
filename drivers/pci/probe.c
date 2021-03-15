@@ -973,6 +973,9 @@ static int pci_register_host_bridge(struct pci_host_bridge *bridge)
 	}
 
 	down_write(&pci_bus_sem);
+	/*
+	 * 加入list
+	 */
 	list_add_tail(&bus->node, &pci_root_buses);
 	up_write(&pci_bus_sem);
 
@@ -2797,6 +2800,9 @@ static unsigned int pci_scan_child_bus_extend(struct pci_bus *bus,
 
 	/* Go find them, Rover! */
 	for (devfn = 0; devfn < 256; devfn += 8) {
+		/*
+		 * 首先调用 pci_scan_slot 扫描所有设备
+		 */
 		nr_devs = pci_scan_slot(bus, devfn);
 
 		/*
@@ -2967,7 +2973,9 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
 	bridge->sysdata = sysdata;
 	bridge->busnr = bus;
 	bridge->ops = ops;
-
+	/*
+	 * 注册host bridge
+	 */
 	error = pci_register_host_bridge(bridge);
 	if (error < 0)
 		goto err_out;

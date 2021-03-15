@@ -358,8 +358,14 @@ static int __init pcibios_assign_resources(void)
 
 	if (!(pci_probe & PCI_ASSIGN_ROMS))
 		list_for_each_entry(bus, &pci_root_buses, node)
+			/*
+			 * 处理PCI设备的ROM空间
+			 */
 			pcibios_allocate_rom_resources(bus);
 
+	/*
+	 * 处理PCI设备的BAR空间
+	 */
 	pci_assign_unassigned_resources();
 	pcibios_fw_addr_list_del();
 

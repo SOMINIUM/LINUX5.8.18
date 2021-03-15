@@ -611,6 +611,9 @@ static int acpi_pci_root_add(struct acpi_device *device,
 	 * PCI namespace does not get created until this call is made (and
 	 * thus the root bridge's pci_dev does not exist).
 	 */
+	/*
+	 * 创建总线设备,并扫描总线上的设备
+	 */
 	root->bus = pci_acpi_scan_root(root);
 	if (!root->bus) {
 		dev_err(&device->dev,
@@ -911,6 +914,9 @@ struct pci_bus *acpi_pci_root_create(struct acpi_pci_root *root,
 
 	pci_acpi_root_add_resources(info);
 	pci_add_resource(&info->resources, &root->secondary);
+	/*
+	 * 创建总线
+	 */
 	bus = pci_create_root_bus(NULL, busnum, ops->pci_ops,
 				  sysdata, &info->resources);
 	if (!bus)
@@ -940,7 +946,9 @@ struct pci_bus *acpi_pci_root_create(struct acpi_pci_root *root,
 	if (obj && obj->type == ACPI_TYPE_INTEGER && obj->integer.value == 0)
 		host_bridge->preserve_config = 1;
 	ACPI_FREE(obj);
-
+	/*
+	 * 扫描总线上的设备
+	 */
 	pci_scan_child_bus(bus);
 	pci_set_host_bridge_release(host_bridge, acpi_pci_root_release_info,
 				    info);

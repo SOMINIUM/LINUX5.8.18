@@ -1993,6 +1993,7 @@ static void acpi_bus_attach(struct acpi_device *device)
 
 	/*
 	 * 使用对应该的handler进行attach
+	 * 也可以理解为加载驱动
 	 */
 	ret = acpi_scan_attach_handler(device);
 	if (ret < 0)
@@ -2003,7 +2004,9 @@ static void acpi_bus_attach(struct acpi_device *device)
 		acpi_device_set_enumerated(device);
 		goto ok;
 	}
-
+	/*
+	 * 创建设备
+	 */
 	ret = device_attach(&device->dev);
 	if (ret < 0)
 		return;
@@ -2064,7 +2067,7 @@ int acpi_bus_scan(acpi_handle handle)
 
 	if (ACPI_SUCCESS(acpi_bus_check_add(handle, 0, NULL, &device)))
 		/*
-		 * walk的过程会生成device树
+		 * walk的过程会生成(acpi_device)device树
 		 */
 		acpi_walk_namespace(ACPI_TYPE_ANY, handle, ACPI_UINT32_MAX,
 				    acpi_bus_check_add, NULL, NULL, &device);
@@ -2193,6 +2196,9 @@ int __init acpi_scan_init(void)
 	acpi_status status;
 	struct acpi_table_stao *stao_ptr;
 
+	/*********************************************************************
+	 * 加入各种handler
+	 */
 	acpi_pci_root_init();
 	acpi_pci_link_init();
 	acpi_processor_init();
@@ -2209,6 +2215,8 @@ int __init acpi_scan_init(void)
 	acpi_init_lpit();
 
 	acpi_scan_add_handler(&generic_device_handler);
+
+	/*********************************************************************/
 
 	/*
 	 * If there is STAO table, check whether it needs to ignore the UART
@@ -2238,6 +2246,9 @@ int __init acpi_scan_init(void)
 	mutex_lock(&acpi_scan_lock);
 	/*
 	 * Enumerate devices in the ACPI namespace.
+	 */
+	/*
+	 * 设备枚举过程
 	 */
 	result = acpi_bus_scan(ACPI_ROOT_OBJECT);
 	if (result)
