@@ -7478,6 +7478,9 @@ int kvm_arch_init(void *opaque)
 		goto out_free_x86_emulator_cache;
 	}
 
+	/*
+	 * 内存虚拟化初始化
+	 */
 	r = kvm_mmu_module_init();
 	if (r)
 		goto out_free_percpu;
@@ -9768,10 +9771,12 @@ int kvm_arch_hardware_setup(void *opaque)
 	if (boot_cpu_has(X86_FEATURE_XSAVES))
 		rdmsrl(MSR_IA32_XSS, host_xss);
 
+	//调用cpu自己的 hardware_setup
 	r = ops->hardware_setup();
 	if (r != 0)
 		return r;
 
+	//copy函数指针
 	memcpy(&kvm_x86_ops, ops->runtime_ops, sizeof(kvm_x86_ops));
 
 	if (!kvm_cpu_cap_has(X86_FEATURE_XSAVES))

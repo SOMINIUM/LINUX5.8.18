@@ -7971,6 +7971,7 @@ static struct kvm_x86_ops vmx_x86_ops __initdata = {
 	.migrate_timers = vmx_migrate_timers,
 };
 
+//硬件相关的初始化
 static __init int hardware_setup(void)
 {
 	unsigned long host_bndcfgs;
@@ -8002,6 +8003,7 @@ static __init int hardware_setup(void)
 	    !(cpu_has_vmx_invvpid_single() || cpu_has_vmx_invvpid_global()))
 		enable_vpid = 0;
 
+	//检测ept页表支持
 	if (!cpu_has_vmx_ept() ||
 	    !cpu_has_vmx_ept_4levels() ||
 	    !cpu_has_vmx_ept_mt_wb() ||
@@ -8138,6 +8140,7 @@ static __init int hardware_setup(void)
 
 	vmx_set_cpu_caps();
 
+	//为每个cpu分配VMCS
 	r = alloc_kvm_area();
 	if (r)
 		nested_vmx_hardware_unsetup();
@@ -8163,6 +8166,9 @@ static void vmx_cleanup_l1d_flush(void)
 	l1tf_vmx_mitigation = VMENTER_L1D_FLUSH_AUTO;
 }
 
+/*
+ * kvm模块在卸载时会调用
+ */
 static void vmx_exit(void)
 {
 #ifdef CONFIG_KEXEC_CORE
@@ -8199,6 +8205,10 @@ static void vmx_exit(void)
 }
 module_exit(vmx_exit);
 
+
+/*
+ * kvm初始化,一般在insmod ko时或者如果编译时内核时,在系统启动的时,会调用
+ */
 static int __init vmx_init(void)
 {
 	int r, cpu;
@@ -8237,6 +8247,10 @@ static int __init vmx_init(void)
 	}
 #endif
 
+	/*
+	 * 这里的 vmx_init_ops 是一非常重要的结构,包括vt-x具体实现,回调等重要函数
+	 * kvm_init 会将vmx_init_ops提供给kvm来使用
+	 */
 	r = kvm_init(&vmx_init_ops, sizeof(struct vcpu_vmx),
 		     __alignof__(struct vcpu_vmx), THIS_MODULE);
 	if (r)

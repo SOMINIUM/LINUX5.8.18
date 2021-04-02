@@ -3848,6 +3848,7 @@ static int kvm_dev_ioctl_create_vm(unsigned long type)
 	struct kvm *kvm;
 	struct file *file;
 
+	//vm创建核心
 	kvm = kvm_create_vm(type);
 	if (IS_ERR(kvm))
 		return PTR_ERR(kvm);
@@ -3900,6 +3901,7 @@ static long kvm_dev_ioctl(struct file *filp,
 		r = KVM_API_VERSION;
 		break;
 	case KVM_CREATE_VM:
+		//创建VCPU
 		r = kvm_dev_ioctl_create_vm(arg);
 		break;
 	case KVM_CHECK_EXTENSION:
@@ -4705,6 +4707,9 @@ int kvm_init(void *opaque, unsigned vcpu_size, unsigned vcpu_align,
 	int r;
 	int cpu;
 
+	/*
+	 * 执行体系架构相关的初始化
+	 */
 	r = kvm_arch_init(opaque);
 	if (r)
 		goto out_fail;
@@ -4716,6 +4721,9 @@ int kvm_init(void *opaque, unsigned vcpu_size, unsigned vcpu_align,
 	 * kvm_arch_init must be called before kvm_irqfd_init to avoid creating
 	 * conflicts in case kvm is already setup for another implementation.
 	 */
+	/*
+	 * irqfd相关初始化
+	 */
 	r = kvm_irqfd_init();
 	if (r)
 		goto out_irqfd;
@@ -4725,12 +4733,16 @@ int kvm_init(void *opaque, unsigned vcpu_size, unsigned vcpu_align,
 		goto out_free_0;
 	}
 
+	/*
+	 * 创建kvm重要结构体,初始化硬件特性
+	 */
 	r = kvm_arch_hardware_setup(opaque);
 	if (r < 0)
 		goto out_free_1;
 
 	c.ret = &r;
 	c.opaque = opaque;
+	//对每个cpu执行 check_processor_compat
 	for_each_online_cpu(cpu) {
 		smp_call_function_single(cpu, check_processor_compat, &c, 1);
 		if (r < 0)
@@ -4741,11 +4753,17 @@ int kvm_init(void *opaque, unsigned vcpu_size, unsigned vcpu_align,
 				      kvm_starting_cpu, kvm_dying_cpu);
 	if (r)
 		goto out_free_2;
+	/*
+	 * 注册重启回调
+	 */
 	register_reboot_notifier(&kvm_reboot_notifier);
 
 	/* A kmem cache lets us meet the alignment requirements of fx_save. */
 	if (!vcpu_align)
 		vcpu_align = __alignof__(struct kvm_vcpu);
+	/*
+	 * 创建vcpu cache
+	 */
 	kvm_vcpu_cache =
 		kmem_cache_create_usercopy("kvm_vcpu", vcpu_size, vcpu_align,
 					   SLAB_ACCOUNT,
@@ -4761,10 +4779,14 @@ int kvm_init(void *opaque, unsigned vcpu_size, unsigned vcpu_align,
 	if (r)
 		goto out_free;
 
+	/*
+	 * 这个结构操作用于/dev/kvm操作
+	 */
 	kvm_chardev_ops.owner = module;
 	kvm_vm_fops.owner = module;
 	kvm_vcpu_fops.owner = module;
 
+	//创建/dev/kvm设备结点
 	r = misc_register(&kvm_dev);
 	if (r) {
 		pr_err("kvm: misc device register failed\n");
@@ -4776,6 +4798,9 @@ int kvm_init(void *opaque, unsigned vcpu_size, unsigned vcpu_align,
 	kvm_preempt_ops.sched_in = kvm_sched_in;
 	kvm_preempt_ops.sched_out = kvm_sched_out;
 
+	/*
+	 * debug初始化
+	 */
 	kvm_init_debug();
 
 	r = kvm_vfio_ops_init();

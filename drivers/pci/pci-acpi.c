@@ -1347,7 +1347,8 @@ static int __init acpi_pci_init(void)
 		pcie_no_aspm();
 	}
 	/*
-	 * 注册pci总线,这里仅仅是放入一个链表,而不是调用bus_add
+	 * 注册apci_pci总线,这里仅仅是放入一个链表,而不是调用bus_add
+	 * 这个总线不是真正的pci总线
 	 */
 	ret = register_acpi_bus_type(&acpi_pci_bus);
 	if (ret)
