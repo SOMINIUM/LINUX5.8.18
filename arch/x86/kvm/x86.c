@@ -7479,7 +7479,7 @@ int kvm_arch_init(void *opaque)
 	}
 
 	/*
-	 * 内存虚拟化初始化
+	 * 内存虚拟化MMU初始化
 	 */
 	r = kvm_mmu_module_init();
 	if (r)
@@ -9434,6 +9434,7 @@ int kvm_arch_vcpu_create(struct kvm_vcpu *vcpu)
 
 	kvm_set_tsc_khz(vcpu, max_tsc_khz);
 
+	//为VCPU创建mmu
 	r = kvm_mmu_create(vcpu);
 	if (r < 0)
 		return r;

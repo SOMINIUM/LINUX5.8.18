@@ -95,10 +95,15 @@ struct kvm_memory_region {
 
 /* for KVM_SET_USER_MEMORY_REGION */
 struct kvm_userspace_memory_region {
+    /* AndressSpace ID */
 	__u32 slot;
+    /* 内存属性 */
 	__u32 flags;
+    /* 客户机物理地址 */
 	__u64 guest_phys_addr;
+    /* 大小 */
 	__u64 memory_size; /* bytes */
+    /* 用户空间虚拟地址 */
 	__u64 userspace_addr; /* start of the userspace allocated memory */
 };
 

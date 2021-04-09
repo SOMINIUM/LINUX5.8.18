@@ -2518,6 +2518,7 @@ static __init int setup_vmcs_config(struct vmcs_config *vmcs_conf,
 	min = PIN_BASED_EXT_INTR_MASK | PIN_BASED_NMI_EXITING;
 	opt = PIN_BASED_VIRTUAL_NMIS | PIN_BASED_POSTED_INTR |
 		 PIN_BASED_VMX_PREEMPTION_TIMER;
+	/* 读取 MSR_IA32_VMX_PINBASED_CTLS 用于查看是否支持EPT*/
 	if (adjust_vmx_controls(min, opt, MSR_IA32_VMX_PINBASED_CTLS,
 				&_pin_based_exec_control) < 0)
 		return -EIO;
@@ -8003,7 +8004,10 @@ static __init int hardware_setup(void)
 	    !(cpu_has_vmx_invvpid_single() || cpu_has_vmx_invvpid_global()))
 		enable_vpid = 0;
 
-	//检测ept页表支持
+	/*
+	 * 检测ept页表支持
+	 * 默认情况或者说初始化的时候 enable_ept = 1,这里会检测设置0
+	 */
 	if (!cpu_has_vmx_ept() ||
 	    !cpu_has_vmx_ept_4levels() ||
 	    !cpu_has_vmx_ept_mt_wb() ||

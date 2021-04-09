@@ -5702,6 +5702,7 @@ int kvm_mmu_create(struct kvm_vcpu *vcpu)
 
 	vcpu->arch.nested_mmu.translate_gpa = translate_nested_gpa;
 
+	//下面这个分配的页面只有在影子页表的机制下才有用
 	ret = alloc_mmu_pages(vcpu, &vcpu->arch.guest_mmu);
 	if (ret)
 		return ret;
