@@ -6086,6 +6086,9 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu, fastpath_t exit_fastpath)
 
 	exit_reason = array_index_nospec(exit_reason,
 					 kvm_vmx_max_exit_handlers);
+
+	/* 调用退出处理函数处理 */
+	/* kvm_vmx_exit_handlers 是一个函数数组 */
 	if (!kvm_vmx_exit_handlers[exit_reason])
 		goto unexpected_vmexit;
 

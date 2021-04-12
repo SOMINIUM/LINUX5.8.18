@@ -1333,6 +1333,7 @@ int kvm_set_memory_region(struct kvm *kvm,
 	int r;
 
 	mutex_lock(&kvm->slots_lock);
+	/* 这里会建立映射 */
 	r = __kvm_set_memory_region(kvm, mem);
 	mutex_unlock(&kvm->slots_lock);
 	return r;
@@ -3630,6 +3631,7 @@ static long kvm_vm_ioctl(struct file *filp,
 		r = kvm_vm_ioctl_enable_cap_generic(kvm, &cap);
 		break;
 	}
+	/* 用户空间设置内存空间 */
 	case KVM_SET_USER_MEMORY_REGION: {
 		struct kvm_userspace_memory_region kvm_userspace_mem;
 
@@ -3638,6 +3640,7 @@ static long kvm_vm_ioctl(struct file *filp,
 						sizeof(kvm_userspace_mem)))
 			goto out;
 
+		/* 关键流程 */
 		r = kvm_vm_ioctl_set_memory_region(kvm, &kvm_userspace_mem);
 		break;
 	}
