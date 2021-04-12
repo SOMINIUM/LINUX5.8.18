@@ -600,19 +600,25 @@ int kvm_pic_init(struct kvm *kvm)
 	/*
 	 * Initialize PIO device
 	 */
+	/* master PIC 设备 */
 	kvm_iodevice_init(&s->dev_master, &picdev_master_ops);
+	/* slave PIC 设备 */
 	kvm_iodevice_init(&s->dev_slave, &picdev_slave_ops);
+	/* eclr 设备 */
 	kvm_iodevice_init(&s->dev_eclr, &picdev_eclr_ops);
 	mutex_lock(&kvm->slots_lock);
+	/* 注册了 0x20 0x21 */
 	ret = kvm_io_bus_register_dev(kvm, KVM_PIO_BUS, 0x20, 2,
 				      &s->dev_master);
 	if (ret < 0)
 		goto fail_unlock;
 
+	/* 注册了 0xa0 0xa1 */
 	ret = kvm_io_bus_register_dev(kvm, KVM_PIO_BUS, 0xa0, 2, &s->dev_slave);
 	if (ret < 0)
 		goto fail_unreg_2;
 
+	/* 注册了 0x4d0 0x4d1 */
 	ret = kvm_io_bus_register_dev(kvm, KVM_PIO_BUS, 0x4d0, 2, &s->dev_eclr);
 	if (ret < 0)
 		goto fail_unreg_1;

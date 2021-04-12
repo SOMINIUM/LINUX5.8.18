@@ -152,6 +152,7 @@ static int setup_routing_entry(struct kvm *kvm,
 	if (e->type == KVM_IRQ_ROUTING_IRQCHIP)
 		rt->chip[e->irqchip.irqchip][e->irqchip.pin] = e->gsi;
 
+	/* 加入到hlist中 */
 	hlist_add_head(&e->link, &rt->map[e->gsi]);
 
 	return 0;
@@ -193,6 +194,11 @@ int kvm_set_irq_routing(struct kvm *kvm,
 		for (j = 0; j < KVM_IRQCHIP_NUM_PINS; j++)
 			new->chip[i][j] = -1;
 
+	/*
+	 * 把 kvm_irq_routing_entry 转化为 kvm_kernel_irq_routing_entry
+	 * 并加入到kvm->irq_routing指向的 kvm_irq_routing_table 中的hlist
+	 *
+	 * */
 	for (i = 0; i < nr; ++i) {
 		r = -ENOMEM;
 		e = kzalloc(sizeof(*e), GFP_KERNEL_ACCOUNT);
@@ -218,6 +224,7 @@ int kvm_set_irq_routing(struct kvm *kvm,
 
 	mutex_lock(&kvm->irq_lock);
 	old = rcu_dereference_protected(kvm->irq_routing, 1);
+	/* 把配置好的new放入kvm->irq_routing */
 	rcu_assign_pointer(kvm->irq_routing, new);
 	kvm_irq_routing_update(kvm);
 	kvm_arch_irq_routing_update(kvm);

@@ -5040,6 +5040,7 @@ set_identity_unlock:
 	case KVM_GET_NR_MMU_PAGES:
 		r = kvm_vm_ioctl_get_nr_mmu_pages(kvm);
 		break;
+	/* 创建irqchip PIC的模拟 */
 	case KVM_CREATE_IRQCHIP: {
 		mutex_lock(&kvm->lock);
 
@@ -5061,6 +5062,7 @@ set_identity_unlock:
 			goto create_irqchip_unlock;
 		}
 
+		/* 设置默认路由表 */
 		r = kvm_setup_default_irq_routing(kvm);
 		if (r) {
 			kvm_ioapic_destroy(kvm);
