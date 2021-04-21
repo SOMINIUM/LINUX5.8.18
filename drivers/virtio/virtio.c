@@ -347,6 +347,7 @@ int register_virtio_device(struct virtio_device *dev)
 	 * device_add() causes the bus infrastructure to look for a matching
 	 * driver.
 	 */
+	/* 添加设备 */
 	err = device_add(&dev->dev);
 	if (err)
 		ida_simple_remove(&virtio_index_ida, dev->index);

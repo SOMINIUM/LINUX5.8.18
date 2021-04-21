@@ -512,6 +512,7 @@ static void virtio_pci_release_dev(struct device *_d)
 static int virtio_pci_probe(struct pci_dev *pci_dev,
 			    const struct pci_device_id *id)
 {
+	/* 分配 virtio_pci_device 结构休 */
 	struct virtio_pci_device *vp_dev, *reg_dev = NULL;
 	int rc;
 
@@ -528,6 +529,7 @@ static int virtio_pci_probe(struct pci_dev *pci_dev,
 	spin_lock_init(&vp_dev->lock);
 
 	/* enable the device */
+	/* 使能设备 */
 	rc = pci_enable_device(pci_dev);
 	if (rc)
 		goto err_enable_device;
@@ -540,6 +542,7 @@ static int virtio_pci_probe(struct pci_dev *pci_dev,
 		if (rc)
 			goto err_probe;
 	} else {
+		/* 初始化PCI设备对应的virtio设备 */
 		rc = virtio_pci_modern_probe(vp_dev);
 		if (rc == -ENODEV)
 			rc = virtio_pci_legacy_probe(vp_dev);
@@ -549,6 +552,9 @@ static int virtio_pci_probe(struct pci_dev *pci_dev,
 
 	pci_set_master(pci_dev);
 
+	/***********************************/
+	/* 注册 virtio dev 注意这里注册设备*/
+	/***********************************/
 	rc = register_virtio_device(&vp_dev->vdev);
 	reg_dev = vp_dev;
 	if (rc)
@@ -627,6 +633,7 @@ static struct pci_driver virtio_pci_driver = {
 	.sriov_configure = virtio_pci_sriov_configure,
 };
 
+/* 注册驱动 */
 module_pci_driver(virtio_pci_driver);
 
 MODULE_AUTHOR("Anthony Liguori <aliguori@us.ibm.com>");

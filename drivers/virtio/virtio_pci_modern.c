@@ -460,6 +460,10 @@ static const struct virtio_config_ops virtio_pci_config_nodev_ops = {
 	.get_vq_affinity = vp_get_vq_affinity,
 };
 
+/*
+ * virtio_pci_config_ops 结构体中成员函数是代理virtioPCI的IO操作
+ * 包括读写 virtio PCI 代理设备的PIO和MMIO
+ */
 static const struct virtio_config_ops virtio_pci_config_ops = {
 	.get		= vp_get,
 	.set		= vp_set,
@@ -589,6 +593,7 @@ int virtio_pci_modern_probe(struct virtio_pci_device *vp_dev)
 	check_offsets();
 
 	/* We only own devices >= 0x1000 and <= 0x107f: leave the rest. */
+	/* virtio 设备device 值应该在0x1000到0x107f,否则直接返回设备不存在 */
 	if (pci_dev->device < 0x1000 || pci_dev->device > 0x107f)
 		return -ENODEV;
 
@@ -604,6 +609,7 @@ int virtio_pci_modern_probe(struct virtio_pci_device *vp_dev)
 	vp_dev->vdev.id.vendor = pci_dev->subsystem_vendor;
 
 	/* check for a common config: if not, use legacy mode (bar 0). */
+	/* 发现 capabilities */
 	common = virtio_pci_find_capability(pci_dev, VIRTIO_PCI_CAP_COMMON_CFG,
 					    IORESOURCE_IO | IORESOURCE_MEM,
 					    &vp_dev->modern_bars);
@@ -647,6 +653,9 @@ int virtio_pci_modern_probe(struct virtio_pci_device *vp_dev)
 		return err;
 
 	err = -EINVAL;
+	/*
+	 * 通过 map_capability 将PCI 代理设备的BAR空间映射到内核地址空间
+	 * */
 	vp_dev->common = map_capability(pci_dev, common,
 					sizeof(struct virtio_pci_common_cfg), 4,
 					0, sizeof(struct virtio_pci_common_cfg),
@@ -659,6 +668,7 @@ int virtio_pci_modern_probe(struct virtio_pci_device *vp_dev)
 	if (!vp_dev->isr)
 		goto err_map_isr;
 
+	/* 读取配置信息 */
 	/* Read notify_off_multiplier from config space. */
 	pci_read_config_dword(pci_dev,
 			      notify + offsetof(struct virtio_pci_notify_cap,
@@ -699,6 +709,9 @@ int virtio_pci_modern_probe(struct virtio_pci_device *vp_dev)
 		if (!vp_dev->device)
 			goto err_map_device;
 
+		/************************************/
+		/* 设置 virtio_pci_config_ops(重要)	*/
+		/************************************/
 		vp_dev->vdev.config = &virtio_pci_config_ops;
 	} else {
 		vp_dev->vdev.config = &virtio_pci_config_nodev_ops;

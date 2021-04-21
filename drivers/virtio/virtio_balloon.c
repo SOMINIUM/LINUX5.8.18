@@ -1158,6 +1158,7 @@ static struct virtio_driver virtio_balloon_driver = {
 #endif
 };
 
+/* 注册驱动 */
 module_virtio_driver(virtio_balloon_driver);
 MODULE_DEVICE_TABLE(virtio, id_table);
 MODULE_DESCRIPTION("Virtio balloon driver");
