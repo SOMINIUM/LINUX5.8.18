@@ -897,6 +897,7 @@ static int virtballoon_probe(struct virtio_device *vdev)
 		return -EINVAL;
 	}
 
+	/* 分配结构体 */
 	vdev->priv = vb = kzalloc(sizeof(*vb), GFP_KERNEL);
 	if (!vb) {
 		err = -ENOMEM;
@@ -912,6 +913,7 @@ static int virtballoon_probe(struct virtio_device *vdev)
 
 	balloon_devinfo_init(&vb->vb_dev_info);
 
+	/* 关键调用点 */
 	err = init_vqs(vb);
 	if (err)
 		goto out_free_vb;
@@ -1006,6 +1008,7 @@ static int virtballoon_probe(struct virtio_device *vdev)
 			goto out_unregister_oom;
 	}
 
+	/* 设置 VIRTIO_CONFIG_S_DRIVER_OK */
 	virtio_device_ready(vdev);
 
 	if (towards_target(vb))
