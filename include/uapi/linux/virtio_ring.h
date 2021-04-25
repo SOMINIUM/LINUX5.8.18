@@ -96,17 +96,22 @@
 /* Virtio ring descriptors: 16 bytes.  These can chain together via "next". */
 struct vring_desc {
 	/* Address (guest-physical). */
+    /* 表示IO物理地址 GPA */
 	__virtio64 addr;
 	/* Length. */
+    /* 表法IO的长度 */
 	__virtio32 len;
 	/* The flags as indicated above. */
+    /* 如果存在 VRING_DESC_F_NEXT 表这个IO包括下一个desc的连续desc */
 	__virtio16 flags;
 	/* We chain unused descriptors via this, too */
+    /* 下一个 */
 	__virtio16 next;
 };
 
 struct vring_avail {
 	__virtio16 flags;
+    /* 表示下次[驱动]应该写ring的那一个 */
 	__virtio16 idx;
 	__virtio16 ring[];
 };
@@ -124,6 +129,7 @@ typedef struct vring_used_elem __attribute__((aligned(VRING_USED_ALIGN_SIZE)))
 
 struct vring_used {
 	__virtio16 flags;
+    /* 表示下次[设备]应该写ring的那一个 */
 	__virtio16 idx;
 	vring_used_elem_t ring[];
 };
@@ -150,12 +156,16 @@ typedef struct vring_used __attribute__((aligned(VRING_USED_ALIGN_SIZE)))
 	vring_used_t;
 
 struct vring {
+    /* 表示vring的大小,也就是vring desc的个数 */
 	unsigned int num;
 
+    /* 描述符表 */
 	vring_desc_t *desc;
 
+    /* 可用的描述符 */
 	vring_avail_t *avail;
 
+    /* 已经使用的描述符 */
 	vring_used_t *used;
 };
 
