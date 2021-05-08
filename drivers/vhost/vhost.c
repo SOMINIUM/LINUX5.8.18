@@ -491,6 +491,7 @@ void vhost_dev_init(struct vhost_dev *dev,
 		mutex_init(&vq->mutex);
 		vhost_vq_reset(dev, vq);
 		if (vq->handle_kick)
+			/* 关键调用点 */
 			vhost_poll_init(&vq->poll, vq->handle_kick,
 					EPOLLIN, dev);
 	}

@@ -1336,6 +1336,7 @@ static int vhost_net_open(struct inode *inode, struct file *f)
 	vhost_poll_init(n->poll + VHOST_NET_VQ_TX, handle_tx_net, EPOLLOUT, dev);
 	vhost_poll_init(n->poll + VHOST_NET_VQ_RX, handle_rx_net, EPOLLIN, dev);
 
+	/* 将vhost_net赋值给file->private_data */
 	f->private_data = n;
 	n->page_frag.page = NULL;
 	n->refcnt_bias = 0;
@@ -1697,6 +1698,7 @@ out:
 	return r;
 }
 
+/* 关键函数 */
 static long vhost_net_ioctl(struct file *f, unsigned int ioctl,
 			    unsigned long arg)
 {
