@@ -1273,6 +1273,7 @@ static void handle_rx_net(struct vhost_work *work)
 	handle_rx(net);
 }
 
+/* 在用户态 open /dev/vhost-net 会执行 */
 static int vhost_net_open(struct inode *inode, struct file *f)
 {
 	struct vhost_net *n;
@@ -1282,6 +1283,7 @@ static int vhost_net_open(struct inode *inode, struct file *f)
 	struct xdp_buff *xdp;
 	int i;
 
+	/* 分配 vhost_net */
 	n = kvmalloc(sizeof *n, GFP_KERNEL | __GFP_RETRY_MAYFAIL);
 	if (!n)
 		return -ENOMEM;
@@ -1325,6 +1327,7 @@ static int vhost_net_open(struct inode *inode, struct file *f)
 		n->vqs[i].rx_ring = NULL;
 		vhost_net_buf_init(&n->vqs[i].rxq);
 	}
+	/* 初始化vhost dev */
 	vhost_dev_init(dev, vqs, VHOST_NET_VQ_MAX,
 		       UIO_MAXIOV + VHOST_NET_BATCH,
 		       VHOST_NET_PKT_WEIGHT, VHOST_NET_WEIGHT, true,
@@ -1775,6 +1778,7 @@ static __poll_t vhost_net_chr_poll(struct file *file, poll_table *wait)
 	return vhost_chr_poll(file, dev, wait);
 }
 
+/* 文件接口 */
 static const struct file_operations vhost_net_fops = {
 	.owner          = THIS_MODULE,
 	.release        = vhost_net_release,
@@ -1790,6 +1794,7 @@ static const struct file_operations vhost_net_fops = {
 static struct miscdevice vhost_net_misc = {
 	.minor = VHOST_NET_MINOR,
 	.name = "vhost-net",
+	/* 设置ops */
 	.fops = &vhost_net_fops,
 };
 
