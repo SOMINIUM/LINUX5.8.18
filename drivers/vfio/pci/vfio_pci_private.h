@@ -100,6 +100,7 @@ struct vfio_pci_mmap_vma {
 };
 
 struct vfio_pci_device {
+	/* 表示实际的物理设备 */
 	struct pci_dev		*pdev;
 	void __iomem		*barmap[PCI_STD_NUM_BARS];
 	bool			bar_mmap_supported[PCI_STD_NUM_BARS];

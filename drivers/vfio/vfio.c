@@ -1431,6 +1431,7 @@ static int vfio_group_add_container_user(struct vfio_group *group)
 
 static const struct file_operations vfio_device_fops;
 
+/* 获取一个vfio设备的fd */
 static int vfio_group_get_device_fd(struct vfio_group *group, char *buf)
 {
 	struct vfio_device *device;
@@ -1493,6 +1494,7 @@ static int vfio_group_get_device_fd(struct vfio_group *group, char *buf)
 	return ret;
 }
 
+/* 接口ioctl */
 static long vfio_group_fops_unl_ioctl(struct file *filep,
 				      unsigned int cmd, unsigned long arg)
 {
@@ -2376,6 +2378,7 @@ static int __init vfio_init(void)
 	if (ret)
 		goto err_alloc_chrdev;
 
+	/* 创建vfio字符设备 */
 	cdev_init(&vfio.group_cdev, &vfio_group_fops);
 	ret = cdev_add(&vfio.group_cdev, vfio.group_devt, MINORMASK + 1);
 	if (ret)

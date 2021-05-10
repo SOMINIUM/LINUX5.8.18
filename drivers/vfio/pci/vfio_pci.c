@@ -1892,6 +1892,7 @@ static int vfio_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	INIT_LIST_HEAD(&vdev->vma_list);
 	init_rwsem(&vdev->memory_lock);
 
+	/* 关键调用点 */
 	ret = vfio_add_group_dev(&pdev->dev, &vfio_pci_ops, vdev);
 	if (ret)
 		goto out_free;
@@ -2055,6 +2056,10 @@ static const struct pci_error_handlers vfio_err_handlers = {
 	.error_detected = vfio_pci_aer_err_detected,
 };
 
+/*
+ * 当设备需要直通到GUEST中时，需要将原来的驱动解绑
+ * 然后通过 vfio pci driver 重新绑定
+ */
 static struct pci_driver vfio_pci_driver = {
 	.name			= "vfio-pci",
 	.id_table		= NULL, /* only dynamic ids */
