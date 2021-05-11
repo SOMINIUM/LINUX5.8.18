@@ -332,6 +332,7 @@ static struct vfio_group *vfio_create_group(struct iommu_group *iommu_group)
 		return ERR_PTR(-ENOMEM);
 
 	kref_init(&group->kref);
+	/* 初始化设备链表 */
 	INIT_LIST_HEAD(&group->device_list);
 	mutex_init(&group->device_lock);
 	INIT_LIST_HEAD(&group->unbound_list);
@@ -377,6 +378,7 @@ static struct vfio_group *vfio_create_group(struct iommu_group *iommu_group)
 		return ERR_PTR(minor);
 	}
 
+	/* 创建组设备，/dev/vfio/$goupe_id */
 	dev = device_create(vfio.class, NULL,
 			    MKDEV(MAJOR(vfio.group_devt), minor),
 			    group, "%s%d", group->noiommu ? "noiommu-" : "",
@@ -531,6 +533,7 @@ static struct vfio_group *vfio_group_get_from_dev(struct device *dev)
 
 /**
  * Device objects - create, release, get, put, search
+ * 设备创建
  */
 static
 struct vfio_device *vfio_group_create_device(struct vfio_group *group,
@@ -811,8 +814,10 @@ int vfio_add_group_dev(struct device *dev,
 	if (!iommu_group)
 		return -EINVAL;
 
+	/* 只需要创建一个组就可以，一个组中可以有多个设备，每个设备创建时创建组 */
 	group = vfio_group_get_from_iommu(iommu_group);
 	if (!group) {
+		/* 组不存在，创建组 */
 		group = vfio_create_group(iommu_group);
 		if (IS_ERR(group)) {
 			iommu_group_put(iommu_group);
@@ -826,6 +831,7 @@ int vfio_add_group_dev(struct device *dev,
 		iommu_group_put(iommu_group);
 	}
 
+	/* 如果设置已经存在，则返回-EBUSY */
 	device = vfio_group_get_device(group, dev);
 	if (device) {
 		dev_WARN(dev, "Device already exists on group %d\n",
@@ -835,8 +841,10 @@ int vfio_add_group_dev(struct device *dev,
 		return -EBUSY;
 	}
 
+	/* 创建设备 */
 	device = vfio_group_create_device(group, dev, ops, device_data);
 	if (IS_ERR(device)) {
+		/* 加入组 */
 		vfio_group_put(group);
 		return PTR_ERR(device);
 	}
@@ -1178,13 +1186,17 @@ static long vfio_fops_unl_ioctl(struct file *filep,
 	if (!container)
 		return ret;
 
+	/* container 层面的接口 */
 	switch (cmd) {
+		/* 获取api版本 */
 	case VFIO_GET_API_VERSION:
 		ret = VFIO_API_VERSION;
 		break;
+		/* 检测是否支持扩展 */
 	case VFIO_CHECK_EXTENSION:
 		ret = vfio_ioctl_check_extension(container, arg);
 		break;
+		/* 用于设置iommu类型 */
 	case VFIO_SET_IOMMU:
 		ret = vfio_ioctl_set_iommu(container, arg);
 		break;
@@ -1494,7 +1506,7 @@ static int vfio_group_get_device_fd(struct vfio_group *group, char *buf)
 	return ret;
 }
 
-/* 接口ioctl */
+/* 级级别的接口 */
 static long vfio_group_fops_unl_ioctl(struct file *filep,
 				      unsigned int cmd, unsigned long arg)
 {
@@ -1502,6 +1514,7 @@ static long vfio_group_fops_unl_ioctl(struct file *filep,
 	long ret = -ENOTTY;
 
 	switch (cmd) {
+		/* 获取级状态 */
 	case VFIO_GROUP_GET_STATUS:
 	{
 		struct vfio_group_status status;
@@ -1529,6 +1542,7 @@ static long vfio_group_fops_unl_ioctl(struct file *filep,
 		ret = 0;
 		break;
 	}
+	/* 设置组的container */
 	case VFIO_GROUP_SET_CONTAINER:
 	{
 		int fd;
@@ -1542,9 +1556,11 @@ static long vfio_group_fops_unl_ioctl(struct file *filep,
 		ret = vfio_group_set_container(group, fd);
 		break;
 	}
+	/* 取消设置 */
 	case VFIO_GROUP_UNSET_CONTAINER:
 		ret = vfio_group_unset_container(group);
 		break;
+	/* 用于返回一个新的设备fd */
 	case VFIO_GROUP_GET_DEVICE_FD:
 	{
 		char *buf;
@@ -2359,12 +2375,14 @@ static int __init vfio_init(void)
 	INIT_LIST_HEAD(&vfio.iommu_drivers_list);
 	init_waitqueue_head(&vfio.release_q);
 
+	/* 注册misc设备 */
 	ret = misc_register(&vfio_dev);
 	if (ret) {
 		pr_err("vfio: misc device register failed\n");
 		return ret;
 	}
 
+	/* 创建 /dev/vfio/vfio */
 	/* /dev/vfio/$GROUP */
 	vfio.class = class_create(THIS_MODULE, "vfio");
 	if (IS_ERR(vfio.class)) {

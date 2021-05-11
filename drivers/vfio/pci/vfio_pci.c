@@ -757,12 +757,14 @@ struct vfio_devices {
 	int max_index;
 };
 
+/* vfio 设备ioctl接口 */
 static long vfio_pci_ioctl(void *device_data,
 			   unsigned int cmd, unsigned long arg)
 {
 	struct vfio_pci_device *vdev = device_data;
 	unsigned long minsz;
 
+	/* 获取设备信息 */
 	if (cmd == VFIO_DEVICE_GET_INFO) {
 		struct vfio_device_info info;
 
@@ -785,6 +787,7 @@ static long vfio_pci_ioctl(void *device_data,
 		return copy_to_user((void __user *)arg, &info, minsz) ?
 			-EFAULT : 0;
 
+	/* 内存相关的信息 */
 	} else if (cmd == VFIO_DEVICE_GET_REGION_INFO) {
 		struct pci_dev *pdev = vdev->pdev;
 		struct vfio_region_info info;
@@ -930,6 +933,7 @@ static long vfio_pci_ioctl(void *device_data,
 		return copy_to_user((void __user *)arg, &info, minsz) ?
 			-EFAULT : 0;
 
+	/* 中断相关信息 */
 	} else if (cmd == VFIO_DEVICE_GET_IRQ_INFO) {
 		struct vfio_irq_info info;
 
@@ -966,6 +970,7 @@ static long vfio_pci_ioctl(void *device_data,
 		return copy_to_user((void __user *)arg, &info, minsz) ?
 			-EFAULT : 0;
 
+	/* 设置irq */
 	} else if (cmd == VFIO_DEVICE_SET_IRQS) {
 		struct vfio_irq_set hdr;
 		u8 *data = NULL;
@@ -1001,6 +1006,7 @@ static long vfio_pci_ioctl(void *device_data,
 
 		return ret;
 
+	/* 重置设备 */
 	} else if (cmd == VFIO_DEVICE_RESET) {
 		int ret;
 
@@ -1850,6 +1856,7 @@ static int vfio_pci_bus_notifier(struct notifier_block *nb,
 	return 0;
 }
 
+/* 关键调用点 */
 static int vfio_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
 	struct vfio_pci_device *vdev;
