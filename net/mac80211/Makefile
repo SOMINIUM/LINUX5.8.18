@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: GPL-2.0
 obj-$(CONFIG_MAC80211) += mac80211.o
-
+CFLAGS_status.o := -O
+CFLAGS_util.o := -O
+CFLAGS_agg-rx.o := -O
+CFLAGS_agg-tx.o := -O
+CFLAGS_he.o := -O
+CFLAGS_rx.o := -O
+CFLAGS_tx.o := -O
+CFLAGS_mlme.o := -O
+CFLAGS_cfg.o := -O
+CFLAGS_sta_info.o := -O
+CFLAGS_iface.o := -O
 # mac80211 objects
 mac80211-y := \
 	main.o status.o \
