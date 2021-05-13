@@ -10,6 +10,15 @@ else
     echo "Set arch : $1"
 fi
 
+install_rootfs()
+{
+	cd $OUTDIR
+	mkdir tmprfs
+	if [ $1 == "arm64" ];then
+		mount -t ext4 ~/work/lab/rootfs/make-ubuntu-initrc/rootfs-amd64.img ./tmprfs
+	fi
+	cd ..
+}
 
 need_copy_config()
 {
