@@ -79,7 +79,13 @@ need_continue(){
 clear_build(){
 	if [ -d $1 ];then
 		echo "clear build"
-		rm -rf $1
+		/usr/bin/expect <<-EOF
+			spawn sudo rm -rf $1
+			expect {
+				"dongzaiq:" { send "isbn7810\r"; }
+			}
+			expect eof
+		EOF
 	fi
 }
 
