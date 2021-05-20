@@ -31,6 +31,9 @@
  * we can do some sanity checks on the low bits, and don't
  * need to just take things for granted.
  */
+
+/* PIO虚拟地址空间是 0x10000 ~ 0x40000 也就是64K ~ 256K */
+/* PIO的映射仅仅是加上了一个 PIO_OFFSET */
 #define PIO_OFFSET	0x10000UL
 #define PIO_MASK	0x0ffffUL
 #define PIO_RESERVED	0x40000UL
