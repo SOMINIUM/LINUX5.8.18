@@ -3921,6 +3921,7 @@ static int em_jcxz(struct x86_emulate_ctxt *ctxt)
 	return rc;
 }
 
+/* 当GUEST进行IO操作时会被KVM感知 */
 static int em_in(struct x86_emulate_ctxt *ctxt)
 {
 	if (!pio_in_emulated(ctxt, ctxt->dst.bytes, ctxt->src.val,
