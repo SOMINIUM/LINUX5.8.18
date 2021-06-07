@@ -1340,6 +1340,7 @@ int kvm_set_memory_region(struct kvm *kvm,
 }
 EXPORT_SYMBOL_GPL(kvm_set_memory_region);
 
+/* ioctl 设置内存区域 */
 static int kvm_vm_ioctl_set_memory_region(struct kvm *kvm,
 					  struct kvm_userspace_memory_region *mem)
 {
