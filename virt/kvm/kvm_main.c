@@ -1068,6 +1068,7 @@ static struct kvm_memslots *install_new_memslots(struct kvm *kvm,
 	WARN_ON(gen & KVM_MEMSLOT_GEN_UPDATE_IN_PROGRESS);
 	slots->generation = gen | KVM_MEMSLOT_GEN_UPDATE_IN_PROGRESS;
 
+	/* 安装新slots */
 	rcu_assign_pointer(kvm->memslots[as_id], slots);
 	synchronize_srcu_expedited(&kvm->srcu);
 
@@ -1165,9 +1166,12 @@ static int kvm_set_memslot(struct kvm *kvm,
 	if (r)
 		goto out_slots;
 
+	/* 将新slot放入到 kvm->memslots[] 中*/
 	update_memslots(slots, new, change);
+	/* 安装新的slots */
 	slots = install_new_memslots(kvm, as_id, slots);
 
+	/* 刷新页表项 */
 	kvm_arch_commit_memory_region(kvm, mem, old, new, change);
 
 	kvfree(slots);
