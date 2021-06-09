@@ -4134,6 +4134,7 @@ static int direct_page_fault(struct kvm_vcpu *vcpu, gpa_t gpa, u32 error_code,
 		goto out_unlock;
 	if (make_mmu_pages_available(vcpu) < 0)
 		goto out_unlock;
+	/* 关键调用点 */
 	r = __direct_map(vcpu, gpa, write, map_writable, max_level, pfn,
 			 prefault, is_tdp && lpage_disallowed);
 
@@ -5159,6 +5160,7 @@ int kvm_mmu_load(struct kvm_vcpu *vcpu)
 	kvm_mmu_sync_roots(vcpu);
 	if (r)
 		goto out;
+	/* 设置CR3为特定的页表 */
 	kvm_mmu_load_pgd(vcpu);
 	kvm_x86_ops.tlb_flush_current(vcpu);
 out:

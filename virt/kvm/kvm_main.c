@@ -1216,6 +1216,7 @@ static int kvm_delete_memslot(struct kvm *kvm,
 int __kvm_set_memory_region(struct kvm *kvm,
 			    const struct kvm_userspace_memory_region *mem)
 {
+	/* 定义一个新的内在slot */
 	struct kvm_memory_slot old, new;
 	struct kvm_memory_slot *tmp;
 	enum kvm_mr_change change;
@@ -1263,7 +1264,9 @@ int __kvm_set_memory_region(struct kvm *kvm,
 		return kvm_delete_memslot(kvm, mem, &old, as_id);
 
 	new.id = id;
+	/* 将地址转换为页面 */
 	new.base_gfn = mem->guest_phys_addr >> PAGE_SHIFT;
+	/* 将大小转换为页面数 */
 	new.npages = mem->memory_size >> PAGE_SHIFT;
 	new.flags = mem->flags;
 	new.userspace_addr = mem->userspace_addr;

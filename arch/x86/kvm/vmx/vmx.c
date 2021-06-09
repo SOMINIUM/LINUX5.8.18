@@ -4442,6 +4442,7 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu, bool init_event)
 
 	cr0 = X86_CR0_NW | X86_CR0_CD | X86_CR0_ET;
 	vmx->vcpu.arch.cr0 = cr0;
+	/* 为了运行内核头部的实模式代码，在首次进入GUEST时，需要设置为实模式 */
 	vmx_set_cr0(vcpu, cr0); /* enter rmode */
 	vmx_set_cr4(vcpu, 0);
 	vmx_set_efer(vcpu, 0);
@@ -5268,12 +5269,14 @@ static int handle_task_switch(struct kvm_vcpu *vcpu)
 			       reason, has_error_code, error_code);
 }
 
+/* EPT异常处理函数 */
 static int handle_ept_violation(struct kvm_vcpu *vcpu)
 {
 	unsigned long exit_qualification;
 	gpa_t gpa;
 	u64 error_code;
 
+	/* 通过信息 */
 	exit_qualification = vmx_get_exit_qual(vcpu);
 
 	/*
@@ -5290,6 +5293,7 @@ static int handle_ept_violation(struct kvm_vcpu *vcpu)
 	gpa = vmcs_read64(GUEST_PHYSICAL_ADDRESS);
 	trace_kvm_page_fault(gpa, exit_qualification);
 
+	/* 收集错误信息 */
 	/* Is it a read fault? */
 	error_code = (exit_qualification & EPT_VIOLATION_ACC_READ)
 		     ? PFERR_USER_MASK : 0;
@@ -5309,6 +5313,7 @@ static int handle_ept_violation(struct kvm_vcpu *vcpu)
 	       PFERR_GUEST_FINAL_MASK : PFERR_GUEST_PAGE_MASK;
 
 	vcpu->arch.exit_qualification = exit_qualification;
+	/* 关键调用点 */
 	return kvm_mmu_page_fault(vcpu, gpa, error_code, NULL, 0);
 }
 
