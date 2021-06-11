@@ -1086,7 +1086,11 @@ static int __apic_accept_irq(struct kvm_lapic *apic, int delivery_mode,
 						       apic->regs + APIC_TMR);
 		}
 
+		/* 如果存在中断硬件虚拟化辅助，则 deliver_posted_interrupt 返回假
+		 * 从而执行普通的中断注入
+		 * */
 		if (kvm_x86_ops.deliver_posted_interrupt(vcpu, vector)) {
+			/* 执行普通中断注入 */
 			kvm_lapic_set_irr(vector, apic);
 			kvm_make_request(KVM_REQ_EVENT, vcpu);
 			kvm_vcpu_kick(vcpu);

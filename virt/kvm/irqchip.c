@@ -86,6 +86,11 @@ int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level,
 
 	while (i--) {
 		int r;
+		/*
+		 * 这里的set 可以是下面两种
+		 * pic 		:  kvm_set_pic_irq
+		 * ioapic 	:  kvm_set_ioapic_irq
+		 * */
 		r = irq_set[i].set(&irq_set[i], kvm, irq_source_id, level,
 				   line_status);
 		if (r < 0)

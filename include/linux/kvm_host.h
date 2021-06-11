@@ -408,6 +408,8 @@ struct kvm_irq_routing_table {
      * chip两维数组
      * 第一维表示芯片：KVM_NR_IRQCHIPS = 3, 分别为 master PIC,slave PIC,IO APIC
      * 第二维表示芯片的引角
+     *
+     * KVM_IRQCHIP_NUM_PINS = 24
      * */
 	int chip[KVM_NR_IRQCHIPS][KVM_IRQCHIP_NUM_PINS];
 	u32 nr_rt_entries;

@@ -4908,6 +4908,7 @@ void kvm_arch_sync_dirty_log(struct kvm *kvm, struct kvm_memory_slot *memslot)
 		kvm_x86_ops.flush_log_dirty(kvm);
 }
 
+/* 应用层调用 设置irq ioctl */
 int kvm_vm_ioctl_irq_line(struct kvm *kvm, struct kvm_irq_level *irq_event,
 			bool line_status)
 {
@@ -5052,10 +5053,12 @@ set_identity_unlock:
 		if (kvm->created_vcpus)
 			goto create_irqchip_unlock;
 
+		/* pic初始化 */
 		r = kvm_pic_init(kvm);
 		if (r)
 			goto create_irqchip_unlock;
 
+		/* io apic初始化 */
 		r = kvm_ioapic_init(kvm);
 		if (r) {
 			kvm_pic_destroy(kvm);
