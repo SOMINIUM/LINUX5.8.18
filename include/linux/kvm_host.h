@@ -378,6 +378,7 @@ struct kvm_hv_sint {
 };
 
 struct kvm_kernel_irq_routing_entry {
+    /* 全局中断号 Global System interrupt */
 	u32 gsi;
 	u32 type;
 	int (*set)(struct kvm_kernel_irq_routing_entry *e,

@@ -8446,6 +8446,7 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
 			goto out;
 		}
 
+		/* 在VM Entry 前检测需要是否有中断事件，如果有就需要注入 */
 		inject_pending_event(vcpu, &req_immediate_exit);
 		if (req_int_win)
 			kvm_x86_ops.enable_irq_window(vcpu);
