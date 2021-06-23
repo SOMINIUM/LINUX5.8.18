@@ -505,6 +505,7 @@ static inline int virtio_pci_find_capability(struct pci_dev *dev, u8 cfg_type,
 				     &bar);
 
 		/* Ignore structures with reserved BAR values */
+		/* virtio 协议规定 bar的值只能是 0x0 到 0x5 */
 		if (bar > 0x5)
 			continue;
 
@@ -668,7 +669,7 @@ int virtio_pci_modern_probe(struct virtio_pci_device *vp_dev)
 	if (!vp_dev->isr)
 		goto err_map_isr;
 
-	/* 读取配置信息 */
+	/* 读取notify相关的配置信息 */
 	/* Read notify_off_multiplier from config space. */
 	pci_read_config_dword(pci_dev,
 			      notify + offsetof(struct virtio_pci_notify_cap,
