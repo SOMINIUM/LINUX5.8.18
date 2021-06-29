@@ -2383,7 +2383,7 @@ static int __init vfio_init(void)
 		return ret;
 	}
 
-	/* 创建 /dev/vfio/vfio */
+	/* 创建类 */
 	/* /dev/vfio/$GROUP */
 	vfio.class = class_create(THIS_MODULE, "vfio");
 	if (IS_ERR(vfio.class)) {
