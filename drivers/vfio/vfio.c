@@ -488,6 +488,7 @@ struct vfio_group *vfio_group_get_from_iommu(struct iommu_group *iommu_group)
 	struct vfio_group *group;
 
 	mutex_lock(&vfio.group_lock);
+	/* 这里 vfio.group_list 是在创建组的时候加入到这个list的 */
 	list_for_each_entry(group, &vfio.group_list, vfio_next) {
 		if (group->iommu_group == iommu_group) {
 			vfio_group_get(group);
@@ -558,6 +559,7 @@ struct vfio_device *vfio_group_create_device(struct vfio_group *group,
 	vfio_group_get(group);
 
 	mutex_lock(&group->device_lock);
+	/* 加入组 */
 	list_add(&device->group_next, &group->device_list);
 	group->dev_counter++;
 	mutex_unlock(&group->device_lock);
@@ -841,10 +843,9 @@ int vfio_add_group_dev(struct device *dev,
 		return -EBUSY;
 	}
 
-	/* 创建设备 */
+	/* 创建设备 加入组 */
 	device = vfio_group_create_device(group, dev, ops, device_data);
 	if (IS_ERR(device)) {
-		/* 加入组 */
 		vfio_group_put(group);
 		return PTR_ERR(device);
 	}
