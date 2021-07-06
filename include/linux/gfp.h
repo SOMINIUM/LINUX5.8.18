@@ -510,6 +510,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order, int preferred_nid,
 static inline struct page *
 __alloc_pages(gfp_t gfp_mask, unsigned int order, int preferred_nid)
 {
+    /*真正的内存分配函数*/
 	return __alloc_pages_nodemask(gfp_mask, order, preferred_nid, NULL);
 }
 
@@ -520,6 +521,7 @@ __alloc_pages(gfp_t gfp_mask, unsigned int order, int preferred_nid)
 static inline struct page *
 __alloc_pages_node(int nid, gfp_t gfp_mask, unsigned int order)
 {
+	/* 保证nid的合法性 */
 	VM_BUG_ON(nid < 0 || nid >= MAX_NUMNODES);
 	VM_WARN_ON((gfp_mask & __GFP_THISNODE) && !node_online(nid));
 

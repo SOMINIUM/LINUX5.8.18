@@ -20,6 +20,7 @@
 #include <asm/pgalloc.h>
 #include <asm/sections.h>
 
+/* 这里node是指NUMA节点 */
 pg_data_t node_data[MAX_NUMNODES];
 EXPORT_SYMBOL(node_data);
 
