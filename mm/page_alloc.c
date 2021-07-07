@@ -4910,12 +4910,12 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order, int preferred_nid,
 	alloc_mask = gfp_mask;
 	/*
 	 * prepare_alloc_pages 主要是初始化ac，具体见函数实现
-	 * 这里有一个重要的操作就是选定 highest_zoneidx
+	 * 这里有一个重要的操作就是选定 highest_zoneidx 和 zonelist
 	 */
 	if (!prepare_alloc_pages(gfp_mask, order, preferred_nid, nodemask, &ac, &alloc_mask, &alloc_flags))
 		return NULL;
 	/*
-	 * 这里主要是要找一个最好的zone用于后面分配内存
+	 * 这里主要是要找一个最好的zone用于后面分配内存也就是设置preferred_zoneref
 	 *
 	 * */
 	finalise_ac(gfp_mask, &ac);
