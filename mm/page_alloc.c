@@ -4828,9 +4828,8 @@ static inline bool prepare_alloc_pages(gfp_t gfp_mask, unsigned int order,
 		unsigned int *alloc_flags)
 {
 	/*
-	 *
-	 *  根据gfp_mask来初始化ac。
-	 *
+	 * 根据gfp_mask来初始化ac。
+	 * gfp_zone 获取highest_zoneidx
 	 */
 	ac->highest_zoneidx = gfp_zone(gfp_mask);
 	ac->zonelist = node_zonelist(preferred_nid, gfp_mask);
@@ -4911,6 +4910,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order, int preferred_nid,
 	alloc_mask = gfp_mask;
 	/*
 	 * prepare_alloc_pages 主要是初始化ac，具体见函数实现
+	 * 这里有一个重要的操作就是选定 highest_zoneidx
 	 */
 	if (!prepare_alloc_pages(gfp_mask, order, preferred_nid, nodemask, &ac, &alloc_mask, &alloc_flags))
 		return NULL;
@@ -6667,6 +6667,8 @@ static void __init calculate_node_totalpages(struct pglist_data *pgdat,
 			zone->zone_start_pfn = zone_start_pfn;
 		else
 			zone->zone_start_pfn = 0;
+		/* spanned_pages 表示从开始到结束，包括中间不可用的空洞 */
+		/* present_pages 表示从开始到结束,只包括可用的页面 */
 		zone->spanned_pages = size;
 		zone->present_pages = real_size;
 
@@ -7471,6 +7473,7 @@ void __init free_area_init(unsigned long *max_zone_pfn)
 	start_pfn = find_min_pfn_with_active_regions();
 	descending = arch_has_descending_max_zone_pfns();
 
+	/* 计算每个分区的起始帧和结束帧 */
 	for (i = 0; i < MAX_NR_ZONES; i++) {
 		if (descending)
 			zone = MAX_NR_ZONES - i - 1;
@@ -7489,9 +7492,11 @@ void __init free_area_init(unsigned long *max_zone_pfn)
 
 	/* Find the PFNs that ZONE_MOVABLE begins at in each node */
 	memset(zone_movable_pfn, 0, sizeof(zone_movable_pfn));
+	/* 设置 zone_movable_pfn  */
 	find_zone_movable_pfns_for_nodes();
 
 	/* Print out the zone ranges */
+	/* 打印 */
 	pr_info("Zone ranges:\n");
 	for (i = 0; i < MAX_NR_ZONES; i++) {
 		if (i == ZONE_MOVABLE)
