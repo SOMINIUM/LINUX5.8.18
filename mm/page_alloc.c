@@ -4831,6 +4831,10 @@ static inline bool prepare_alloc_pages(gfp_t gfp_mask, unsigned int order,
 	 * 根据gfp_mask来初始化ac。
 	 * gfp_zone 获取highest_zoneidx
 	 */
+	/*
+	 * 这里的 highest_zoneidx 决定了能满足需求的最廉价的内存ZPME
+	 * zonelist,表示在最廉价内存不足时，依次遍历次廉价内存进行分配
+	 */
 	ac->highest_zoneidx = gfp_zone(gfp_mask);
 	ac->zonelist = node_zonelist(preferred_nid, gfp_mask);
 	ac->nodemask = nodemask;
@@ -4879,6 +4883,10 @@ static inline void finalise_ac(gfp_t gfp_mask, struct alloc_context *ac)
 
 /*
  * This is the 'heart' of the zoned buddy allocator.
+ */
+/*
+ * 这里是分配的核心函数，gfp_mask为分配掩码, preferred_nid为NUMA节点ID，order
+ * 为分配的页面数
  */
 struct page *
 __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order, int preferred_nid,
