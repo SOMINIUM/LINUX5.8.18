@@ -3809,6 +3809,8 @@ retry:
 
 			if (node_reclaim_mode == 0 ||
 			    !zone_allows_reclaim(ac->preferred_zoneref->zone, zone))
+				/* 在非NUMA情况 zone_allows_reclaim直接返回true */
+				/* 如果这里不允许启动回收，那后面不需要执行 */
 				continue;
 
 			ret = node_reclaim(zone->zone_pgdat, gfp_mask, order);
@@ -4592,6 +4594,7 @@ retry_cpuset:
 	 * there was a cpuset modification and we are retrying - otherwise we
 	 * could end up iterating over non-eligible zones endlessly.
 	 */
+	/* 因为在速度路径可能修改了nodemask等原因，这里重新设置 preferred_zoneref */
 	ac->preferred_zoneref = first_zones_zonelist(ac->zonelist,
 					ac->highest_zoneidx, ac->nodemask);
 	if (!ac->preferred_zoneref->zone)
@@ -4607,7 +4610,7 @@ retry_cpuset:
 	 * The adjusted alloc_flags might result in immediate success, so try
 	 * that first
 	 * 这是在回收过程，还是会尝试使用 get_page_from_freelist 来快速分配内存
-	 *
+	 * 因为可能在此过程中有内存的释放回来
 	 */
 	page = get_page_from_freelist(gfp_mask, order, alloc_flags, ac);
 	if (page)
@@ -4675,6 +4678,7 @@ retry_cpuset:
 
 retry:
 	/* Ensure kswapd doesn't accidentally go to sleep as long as we loop */
+	/* 确保回收进程运行 */
 	if (alloc_flags & ALLOC_KSWAPD)
 		wake_all_kswapds(order, gfp_mask, ac);
 
@@ -4934,7 +4938,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order, int preferred_nid,
 	 */
 	alloc_flags |= alloc_flags_nofragment(ac.preferred_zoneref->zone, gfp_mask);
 	/*
-	 * 大部分情况会走这里
+	 * 大部分情况会走这里,快速路径
 	 */
 	/* First allocation attempt */
 	page = get_page_from_freelist(alloc_mask, order, alloc_flags, &ac);
@@ -4956,7 +4960,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order, int preferred_nid,
 	 */
 	ac.nodemask = nodemask;
 	/*
-	 * 系统内存不足，先回收再分配
+	 * 系统内存不足，先回收再分配, 慢速路径
 	 */
 
 	page = __alloc_pages_slowpath(alloc_mask, order, &ac);
@@ -4964,6 +4968,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order, int preferred_nid,
 out:
 	if (memcg_kmem_enabled() && (gfp_mask & __GFP_ACCOUNT) && page &&
 	    unlikely(__memcg_kmem_charge_page(page, gfp_mask, order) != 0)) {
+		/* 分配失败 */
 		__free_pages(page, order);
 		page = NULL;
 	}
