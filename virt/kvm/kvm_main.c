@@ -4711,6 +4711,10 @@ static void check_processor_compat(void *data)
 	*c->ret = kvm_arch_check_processor_compat(c->opaque);
 }
 
+/*
+ * 第一个参数是sturct kvm_x86_init_ops
+ * 第二个参数是vcpu结构体大小
+ */
 int kvm_init(void *opaque, unsigned vcpu_size, unsigned vcpu_align,
 		  struct module *module)
 {
