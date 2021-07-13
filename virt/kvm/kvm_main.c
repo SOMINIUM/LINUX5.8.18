@@ -683,6 +683,7 @@ void __weak kvm_arch_pre_destroy_vm(struct kvm *kvm)
 
 static struct kvm *kvm_create_vm(unsigned long type)
 {
+	/* kvm表示一台虚拟机,这里是分配结构体 */
 	struct kvm *kvm = kvm_arch_alloc_vm();
 	int r = -ENOMEM;
 	int i;
@@ -726,10 +727,12 @@ static struct kvm *kvm_create_vm(unsigned long type)
 
 	kvm->max_halt_poll_ns = halt_poll_ns;
 
+	/*初始化kvm->arch,架构相关的初始化 */
 	r = kvm_arch_init_vm(kvm, type);
 	if (r)
 		goto out_err_no_arch_destroy_vm;
 
+	/* 开启VMX模式 */
 	r = hardware_enable_all();
 	if (r)
 		goto out_err_no_disable;
@@ -3872,6 +3875,7 @@ static int kvm_dev_ioctl_create_vm(unsigned long type)
 	if (r < 0)
 		goto put_kvm;
 
+	/* 创建匿名文件,操作函数为 kvm_vm_fops */
 	file = anon_inode_getfile("kvm-vm", &kvm_vm_fops, kvm, O_RDWR);
 	if (IS_ERR(file)) {
 		put_unused_fd(r);
@@ -3892,6 +3896,7 @@ static int kvm_dev_ioctl_create_vm(unsigned long type)
 	}
 	kvm_uevent_notify_change(KVM_EVENT_CREATE_VM, kvm);
 
+	/*设置返回r为一个文件句柄*/
 	fd_install(r, file);
 	return r;
 
@@ -4025,6 +4030,7 @@ static int hardware_enable_all(void)
 	kvm_usage_count++;
 	if (kvm_usage_count == 1) {
 		atomic_set(&hardware_enable_failed, 0);
+		/*关键调用点, 调用 hardware_enable_nolock*/
 		on_each_cpu(hardware_enable_nolock, NULL, 1);
 
 		if (atomic_read(&hardware_enable_failed)) {
@@ -4750,6 +4756,7 @@ int kvm_init(void *opaque, unsigned vcpu_size, unsigned vcpu_align,
 
 	/*
 	 * 创建kvm重要结构体,初始化硬件特性
+	 * kvm_x86_ops 在这里赋值
 	 */
 	r = kvm_arch_hardware_setup(opaque);
 	if (r < 0)

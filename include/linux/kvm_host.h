@@ -479,6 +479,7 @@ struct kvm {
 	struct list_head ioeventfds;
 #endif
 	struct kvm_vm_stat stat;
+    /*体系架构相关*/
 	struct kvm_arch arch;
 	refcount_t users_count;
 #ifdef CONFIG_KVM_MMIO

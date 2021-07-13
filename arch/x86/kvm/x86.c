@@ -9683,6 +9683,7 @@ int kvm_arch_hardware_enable(void)
 	bool stable, backwards_tsc = false;
 
 	kvm_shared_msr_cpu_online();
+	/* kvm_x86_ops 定义在 arch/x86/kvm/x86.c:110 */
 	ret = kvm_x86_ops.hardware_enable();
 	if (ret != 0)
 		return ret;
