@@ -3085,6 +3085,7 @@ static int kvm_vm_ioctl_create_vcpu(struct kvm *kvm, u32 id)
 
 	/* Now it's all set up, let userspace reach it */
 	kvm_get_kvm(kvm);
+	/*创建vcpu句柄*/
 	r = create_vcpu_fd(vcpu);
 	if (r < 0) {
 		kvm_put_kvm_no_destroy(kvm);
@@ -3103,6 +3104,7 @@ static int kvm_vm_ioctl_create_vcpu(struct kvm *kvm, u32 id)
 	mutex_unlock(&kvm->lock);
 	kvm_arch_vcpu_postcreate(vcpu);
 	kvm_create_vcpu_debugfs(vcpu);
+	/*返回vcpu句柄*/
 	return r;
 
 unlock_vcpu_destroy:
@@ -4805,7 +4807,9 @@ int kvm_init(void *opaque, unsigned vcpu_size, unsigned vcpu_align,
 	 * 这个结构操作用于/dev/kvm操作
 	 */
 	kvm_chardev_ops.owner = module;
+	/*vm操作函数*/
 	kvm_vm_fops.owner = module;
+	/*vcpu操作函数*/
 	kvm_vcpu_fops.owner = module;
 
 	//创建/dev/kvm设备结点
