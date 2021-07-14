@@ -360,6 +360,46 @@ static int __init parse_core(struct device_node *core, int package_id,
 	return 0;
 }
 
+/* sample arm cpu device_node as bellow
+         cpu-map {
+            cluster0 {
+                core0 {
+                    cpu = <&cpu0>;
+                };
+                core1 {
+                    cpu = <&cpu1>;
+                };
+                core2 {
+                    cpu = <&cpu2>;
+                };
+                core3 {
+                    cpu = <&cpu3>;
+                };
+            };
+            cluster1 {
+                core0 {
+                    cpu = <&cpu4>;
+                };
+                core1 {
+                    cpu = <&cpu5>;
+                };
+                core2 {
+                    cpu = <&cpu6>;
+                };
+                core3 {
+                    cpu = <&cpu7>;
+                };
+            };
+            cluster2 {
+                core0 {
+                    cpu = <&cpu8>;
+                };
+                core1 {
+                    cpu = <&cpu9>;
+                };
+            };
+        };
+ */
 static int __init parse_cluster(struct device_node *cluster, int depth)
 {
 	char name[20];
@@ -378,6 +418,7 @@ static int __init parse_cluster(struct device_node *cluster, int depth)
 	i = 0;
 	do {
 		snprintf(name, sizeof(name), "cluster%d", i);
+		/* 这里cluster其实是cpu-map */
 		c = of_get_child_by_name(cluster, name);
 		if (c) {
 			leaf = false;

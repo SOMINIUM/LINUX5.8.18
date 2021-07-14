@@ -57,6 +57,7 @@ void store_cpu_topology(unsigned int cpuid)
 		 cpuid_topo->thread_id, mpidr);
 
 topology_populated:
+	/* 更新cpu之间的兄弟关系 */
 	update_siblings_masks(cpuid);
 }
 
