@@ -590,6 +590,11 @@ void __init init_cpu_topology(void)
 	 * Discard anything that was parsed if we hit an error so we
 	 * don't use partial information.
 	 */
+
+	/*
+	 * arm平台会进入 parse_dt_topology drivers/base/arch_topology.c
+	 * x86平台会进入 parse_acpi_topology
+	 */
 	if (parse_acpi_topology())
 		reset_cpu_topology();
 	else if (of_have_populated_dt() && parse_dt_topology())

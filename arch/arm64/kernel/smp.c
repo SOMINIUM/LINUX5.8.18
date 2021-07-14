@@ -736,6 +736,7 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
 
 	/*
 	 * 通过device tree建立拓扑
+	 * init_cpu_topology在drivers/base/arch_topology.c
 	 */
 	init_cpu_topology();
 

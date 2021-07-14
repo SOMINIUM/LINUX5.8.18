@@ -927,6 +927,7 @@ asmlinkage __visible void __init start_kernel(void)
 	 * timer interrupt). Full topology setup happens at smp_init()
 	 * time - but meanwhile we still have a functioning scheduler.
 	 */
+	/* 调度初始化,主要是初始化了各个cpu的调度队列 */
 	sched_init();
 	/*
 	 * Disable preemption - early bootup scheduling is extremely

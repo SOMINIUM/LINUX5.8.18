@@ -6877,6 +6877,7 @@ void __init sched_init(void)
 	autogroup_init(&init_task);
 #endif /* CONFIG_CGROUP_SCHED */
 
+	/* 为每个cpu初始化各自的rq */
 	for_each_possible_cpu(i) {
 		struct rq *rq;
 
@@ -6918,6 +6919,7 @@ void __init sched_init(void)
 		init_tg_rt_entry(&root_task_group, &rq->rt, NULL, i, NULL);
 #endif
 #ifdef CONFIG_SMP
+		/* 调度域 */
 		rq->sd = NULL;
 		rq->rd = NULL;
 		rq->cpu_capacity = rq->cpu_capacity_orig = SCHED_CAPACITY_SCALE;
@@ -6966,6 +6968,7 @@ void __init sched_init(void)
 #ifdef CONFIG_SMP
 	idle_thread_set_boot_cpu();
 #endif
+	/* 初始化公平调度类 */
 	init_sched_fair_class();
 
 	init_schedstats();
