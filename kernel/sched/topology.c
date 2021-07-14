@@ -1416,6 +1416,8 @@ sd_init(struct sched_domain_topology_level *tl,
 
 /*
  * Topology list, bottom-up.
+ *
+ * arm平台只支持 MC/DIE
  */
 static struct sched_domain_topology_level default_topology[] = {
 #ifdef CONFIG_SCHED_SMT
@@ -1980,7 +1982,7 @@ build_sched_domains(const struct cpumask *cpu_map, struct sched_domain_attr *att
 	if (WARN_ON(cpumask_empty(cpu_map)))
 		goto error;
 	/*
-	 * 分配相关的内存
+	 * 分配存储sd sg sgc的内存
 	 */
 	alloc_state = __visit_domain_allocation_hell(&d, cpu_map);
 	if (alloc_state != sa_rootdomain)
@@ -2125,6 +2127,7 @@ cpumask_var_t *alloc_sched_domains(unsigned int ndoms)
 	if (!doms)
 		return NULL;
 	for (i = 0; i < ndoms; i++) {
+		/* alloc_cpumask_var来自include/linux/cpumask.h,直接会返回true */
 		if (!alloc_cpumask_var(&doms[i], GFP_KERNEL)) {
 			free_sched_domains(doms, i);
 			return NULL;
@@ -2158,7 +2161,9 @@ int sched_init_domains(const struct cpumask *cpu_map)
 	doms_cur = alloc_sched_domains(ndoms_cur);
 	if (!doms_cur)
 		doms_cur = &fallback_doms;
+	/* arm64 housekeeping_cpumask 来自kernel/sched/isolation.c */
 	cpumask_and(doms_cur[0], cpu_map, housekeeping_cpumask(HK_FLAG_DOMAIN));
+	/* 构建调度域 */
 	err = build_sched_domains(doms_cur[0], NULL);
 	register_sched_domain_sysctl();
 
