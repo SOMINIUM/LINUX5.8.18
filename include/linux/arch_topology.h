@@ -18,6 +18,7 @@ DECLARE_PER_CPU(unsigned long, cpu_scale);
 
 static inline unsigned long topology_get_cpu_scale(int cpu)
 {
+    /*这个cpu_scale如果不设置默认就是1024,原因看它的定义处*/
 	return per_cpu(cpu_scale, cpu);
 }
 
