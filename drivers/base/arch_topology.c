@@ -133,10 +133,12 @@ void topology_normalize_cpu_scale(void)
 	}
 
 	pr_debug("cpu_capacity: capacity_scale=%llu\n", capacity_scale);
+	/* 对每个cpu设置算力 */
 	for_each_possible_cpu(cpu) {
 		capacity = raw_capacity[cpu] * per_cpu(freq_factor, cpu);
 		capacity = div64_u64(capacity << SCHED_CAPACITY_SHIFT,
 			capacity_scale);
+		/* 设置cpu算力 */
 		topology_set_cpu_scale(cpu, capacity);
 		pr_debug("cpu_capacity: CPU%d cpu_capacity=%lu\n",
 			cpu, topology_get_cpu_scale(cpu));
@@ -505,6 +507,7 @@ static int __init parse_dt_topology(void)
 	if (ret != 0)
 		goto out_map;
 
+	/* 这里会设置cpu的算力 */
 	topology_normalize_cpu_scale();
 
 	/*

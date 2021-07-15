@@ -1364,6 +1364,7 @@ sd_init(struct sched_domain_topology_level *tl,
 #endif
 	};
 
+	/*设置span*/
 	cpumask_and(sched_domain_span(sd), cpu_map, tl->mask(cpu));
 	sd_id = cpumask_first(sched_domain_span(sd));
 
@@ -2052,6 +2053,7 @@ build_sched_domains(const struct cpumask *cpu_map, struct sched_domain_attr *att
 			continue;
 
 		for (sd = *per_cpu_ptr(d.sd, i); sd; sd = sd->parent) {
+			/* 释放掉不需要的sd */
 			claim_allocations(i, sd);
 			/*
 			 * 初始化cpu的算力

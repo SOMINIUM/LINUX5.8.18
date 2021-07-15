@@ -8229,7 +8229,8 @@ static void update_cpu_capacity(struct sched_domain *sd, int cpu)
 	struct sched_group *sdg = sd->groups;
 
 	/*
-	 * 一个cpu的算力是变化的
+	 * 一个cpu的算力可能是变化的
+	 * 在arm64平台，这里不变
 	 */
 	cpu_rq(cpu)->cpu_capacity_orig = arch_scale_cpu_capacity(cpu);
 
@@ -8290,6 +8291,7 @@ void update_group_capacity(struct sched_domain *sd, int cpu)
 		do {
 			struct sched_group_capacity *sgc = group->sgc;
 
+			/*这里就是累加各个cpu算力，形成group的算力*/
 			capacity += sgc->capacity;
 			min_capacity = min(sgc->min_capacity, min_capacity);
 			max_capacity = max(sgc->max_capacity, max_capacity);
