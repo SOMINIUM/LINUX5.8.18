@@ -559,6 +559,7 @@ void update_siblings_masks(unsigned int cpuid)
 		cpu_topo = &cpu_topology[cpu];
 
 		if (cpuid_topo->llc_id == cpu_topo->llc_id) {
+			/* 如果llc_id相同 互相设置为兄弟 */
 			cpumask_set_cpu(cpu, &cpuid_topo->llc_sibling);
 			cpumask_set_cpu(cpuid, &cpu_topo->llc_sibling);
 		}
@@ -566,12 +567,14 @@ void update_siblings_masks(unsigned int cpuid)
 		if (cpuid_topo->package_id != cpu_topo->package_id)
 			continue;
 
+		/* package_id相同 互相设置为兄弟 */
 		cpumask_set_cpu(cpuid, &cpu_topo->core_sibling);
 		cpumask_set_cpu(cpu, &cpuid_topo->core_sibling);
 
 		if (cpuid_topo->core_id != cpu_topo->core_id)
 			continue;
 
+		/* core_id 互相设置为兄弟 */
 		cpumask_set_cpu(cpuid, &cpu_topo->thread_sibling);
 		cpumask_set_cpu(cpu, &cpuid_topo->thread_sibling);
 	}
